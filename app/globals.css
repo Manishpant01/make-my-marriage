@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --color-ivory: #f6f3ee;
+  --color-ink: #1c1917;
+  --color-muted: #6b6560;
+  --color-bronze: #8c6a45;
+  --color-line: #e7e1d8;
+  --color-surface: #fffcf8;
+}
