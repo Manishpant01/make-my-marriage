@@ -16,7 +16,7 @@ One Next.js app, TypeScript, the App Router, and Node.js. Screens and Route Hand
 - Amazon SES for email
 - YouTube as an embed, WhatsApp as a `wa.me` link
 
-Product decisions are in `docs/`.
+Product decisions are in `docs/`. What is already built is in `docs/project-status.md`.
 
 ## Local
 
@@ -26,7 +26,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The app opens at [http://localhost:3000](http://localhost:3000). It boots before those environment values are filled in. The home page is a placeholder. `GET /api/health` returns `{ "ok": true }`.
+The app opens at [http://localhost:3000](http://localhost:3000). It boots before those environment values are filled in. The home page is the public landing page. `GET /api/health` returns `{ "ok": true }`.
 
 | Script | Does |
 |---|---|
