@@ -1,18 +1,23 @@
 import { z } from "zod";
 
 const email = z
-  .string()
+  .string("Enter a valid email.")
   .trim()
   .toLowerCase()
   .pipe(z.email("Enter a valid email."));
 
 const password = z
-  .string()
+  .string("Use at least 8 characters.")
   .min(8, "Use at least 8 characters.")
-  .max(200, "That password is too long.");
+  .max(200, "That password is too long.")
+  .refine((value) => value.trim().length >= 8, "Use at least 8 characters.");
 
 export const signupSchema = z.object({
-  name: z.string().trim().min(1, "Enter your name.").max(80, "That name is too long."),
+  name: z
+    .string("Enter your name.")
+    .trim()
+    .min(1, "Enter your name.")
+    .max(80, "That name is too long."),
   email,
   password,
 });
@@ -20,6 +25,10 @@ export const signupSchema = z.object({
 export const loginSchema = z.object({
   email,
   password,
+});
+
+export const forgotPasswordSchema = z.object({
+  email,
 });
 
 export function firstIssue(error: z.ZodError) {

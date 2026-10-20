@@ -217,6 +217,7 @@ export function SignupForm() {
 export function ForgotPasswordForm() {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [sent, setSent] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -227,6 +228,7 @@ export function ForgotPasswordForm() {
       await postAuth("/api/auth/forgot-password", {
         email: form.get("email") ?? "",
       });
+      setSent(true);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Something went wrong.");
     } finally {
@@ -236,9 +238,15 @@ export function ForgotPasswordForm() {
 
   return (
     <form onSubmit={onSubmit}>
-      <Field id="email" label="Email" type="email" autoComplete="email" />
+      {sent ? (
+        <p role="status" className="mb-5 text-[14px] leading-relaxed">
+          If an account exists for that email, a reset link is on its way.
+        </p>
+      ) : (
+        <Field id="email" label="Email" type="email" autoComplete="email" />
+      )}
       <FormError message={error} />
-      <SubmitButton pending={pending} label="Send reset link" />
+      {sent ? null : <SubmitButton pending={pending} label="Send reset link" />}
       <SwitchLine>
         <Link
           href="/login"

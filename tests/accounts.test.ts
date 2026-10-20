@@ -73,11 +73,19 @@ test("the same email cannot be registered twice", async () => {
   });
   await expect(
     createUser({
-      name: "Rahul",
-      email: "rahul@example.com",
+      name: "Other",
+      email: "Rahul@Example.com",
       password: "password123",
     }),
   ).rejects.toBeInstanceOf(DuplicateEmailError);
+  const db = await readyDb();
+  const emailIndex = (await db.collection("users").indexes()).find(
+    (index) => index.name === "email_1",
+  );
+  expect(emailIndex?.unique).toBe(true);
+  expect(
+    await findUserByPassword("RAHUL@example.com", "password123"),
+  ).toMatchObject({ email: "rahul@example.com", name: "Rahul" });
 });
 
 test("a failed session rolls the new account back", async () => {

@@ -1,10 +1,13 @@
 import { MongoClient, type Db } from "mongodb";
 import { ConfigError } from "@/lib/errors";
 
+const INDEX_REVISION = 1;
+
 const globalForMongo = globalThis as unknown as {
   mongoClient?: Promise<MongoClient>;
   mongoIndexes?: Promise<void>;
   mongoUri?: string;
+  indexRevision?: number;
 };
 
 function requireUri() {
@@ -38,6 +41,10 @@ export async function getDb(): Promise<Db> {
 }
 
 export function readyDb() {
+  if (globalForMongo.indexRevision !== INDEX_REVISION) {
+    globalForMongo.indexRevision = INDEX_REVISION;
+    globalForMongo.mongoIndexes = undefined;
+  }
   if (!globalForMongo.mongoIndexes) {
     globalForMongo.mongoIndexes = ensureIndexes().catch((error: unknown) => {
       globalForMongo.mongoIndexes = undefined;

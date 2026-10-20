@@ -10,10 +10,20 @@ type AttemptDoc = {
   resetAt: Date;
 };
 
+function forwardedAddress(request: Request, name: string) {
+  const first = request.headers.get(name)?.split(",")[0]?.trim();
+  return first || "";
+}
+
 export function clientAddress(request: Request) {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const first = forwarded?.split(",")[0]?.trim();
-  return first || request.headers.get("x-real-ip") || "unknown";
+  if (process.env.VERCEL) {
+    return (
+      forwardedAddress(request, "x-vercel-forwarded-for") ||
+      request.headers.get("x-real-ip")?.trim() ||
+      "local"
+    );
+  }
+  return "local";
 }
 
 export async function assertAuthRate(key: string) {
