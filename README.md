@@ -26,7 +26,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The app opens at [http://localhost:3000](http://localhost:3000). It boots before those environment values are filled in. The home page is the public landing page. `GET /api/health` returns `{ "ok": true }`.
+The app opens at [http://localhost:3000](http://localhost:3000). It boots before those environment values are filled in. The home page is the public landing page. Sign-up and sign-in need `MONGODB_URI` and `AUTH_SECRET`. `GET /api/health` returns `{ "ok": true }`.
 
 | Script | Does |
 |---|---|
@@ -35,3 +35,4 @@ The app opens at [http://localhost:3000](http://localhost:3000). It boots before
 | `npm run start` | Run that build |
 | `npm run typecheck` | Typecheck |
 | `npm run lint` | Lint |
+| `npm run test` | Run the tests |

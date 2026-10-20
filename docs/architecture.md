@@ -233,7 +233,7 @@ erDiagram
   USER ||--o{ PHOTO : uploads
 ```
 
-**users.** The person who can sign in. Email, name, and the password hash. Email is unique. Guests are not users.
+**users.** The person who can sign in. Email, name, the password hash, and when the account was created and last changed. Email is unique. Guests are not users.
 
 **sessions.** Our own records. A session points at a user and expires. The JWT in the cookie carries this session’s id. Signing out deletes the session. This is infrastructure, not a wedding record.
 

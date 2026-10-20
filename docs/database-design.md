@@ -63,6 +63,8 @@ A user is a person who can sign in: the bride, the groom, or a helper. Guests ha
 | email | Required | The sign-in address, stored in lowercase. Unique across all users. |
 | name | Required | The name they enter when they sign up. |
 | passwordHash | Required | A one-way hash of the password. The password cannot be read back. A forgotten-password email lets them set a new hash. |
+| createdAt | Required | The moment the account was created. |
+| updatedAt | Required | The moment the account was last changed. It starts equal to `createdAt`. |
 
 One email is one account. Belonging to several weddings is done with memberships, not with a second user.
 

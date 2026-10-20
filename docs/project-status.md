@@ -6,9 +6,13 @@ When a feature is built, update **Now**, then add a log entry at the top of **Lo
 
 ## Now
 
-The app shell is up, and `/` is the public landing page. Sign-in, sign-up, and the wedding workspace are not built. The landing page links to `/login` and `/signup`, and those routes do not exist yet.
+The app shell, the public landing page, and accounts are in place. A person can sign up, sign in, and sign out. `/home` lists that person’s weddings and is empty until a wedding exists. Creating a wedding is not built. Password reset mail is not sent yet.
 
 ## Log
+
+### 2026-10-20 — Accounts
+
+Sign up, sign in, and sign out. The password is stored as a hash. The session is an httpOnly cookie whose JWT carries only the session id. `/login` and `/signup` follow the Stitch login spec. `/home` lists the signed-in person’s weddings, and a new account sees none. Forgot password is on the login screen. The reset email is not sent until Amazon SES is configured.
 
 ### 2026-10-20 — Landing page
 
