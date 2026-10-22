@@ -10,4 +10,39 @@
   --color-surface: #fffcf8;
   --color-danger: #9f2d2d;
   --color-danger-soft: #f8e8e6;
+  --color-bronze-hover: #74583a;
+  --color-success: #2f6b4f;
+}
+
+@keyframes wedding-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(-110%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(110%);
+  }
 }

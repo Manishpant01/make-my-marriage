@@ -60,6 +60,67 @@ export const createWeddingSchema = z
     path: ["endDate"],
   });
 
+const personName = (empty: string) =>
+  z.string(empty).trim().min(1, empty).max(80, "That name is too long.");
+
+const coupleFields = z
+  .object({
+    brideName: personName("Enter the bride’s name."),
+    groomName: personName("Enter the groom’s name."),
+    startDate: calendarDate,
+    endDate: calendarDate,
+  })
+  .refine((value) => value.endDate >= value.startDate, {
+    error: "The last day is before the first day.",
+    path: ["endDate"],
+  });
+
+const invitationFields = z.object({
+  invitationMessage: z
+    .string("Enter a message.")
+    .trim()
+    .max(400, "That message is too long."),
+});
+
+export function parseWeddingPatch(body: unknown) {
+  const record =
+    body !== null && typeof body === "object"
+      ? (body as Record<string, unknown>)
+      : null;
+  const invitationOnly =
+    record !== null &&
+    "invitationMessage" in record &&
+    !("brideName" in record) &&
+    !("groomName" in record) &&
+    !("startDate" in record) &&
+    !("endDate" in record);
+  if (invitationOnly) {
+    const parsed = invitationFields.safeParse(body);
+    if (!parsed.success) {
+      return { ok: false as const, message: firstIssue(parsed.error) };
+    }
+    return { ok: true as const, kind: "invitation" as const, data: parsed.data };
+  }
+  const parsed = coupleFields.safeParse(body);
+  if (!parsed.success) {
+    return { ok: false as const, message: firstIssue(parsed.error) };
+  }
+  const withMessage =
+    record !== null && "invitationMessage" in record
+      ? invitationFields.safeParse(body)
+      : null;
+  if (withMessage && !withMessage.success) {
+    return { ok: false as const, message: firstIssue(withMessage.error) };
+  }
+  return {
+    ok: true as const,
+    kind: "couple" as const,
+    data: withMessage?.success
+      ? { ...parsed.data, invitationMessage: withMessage.data.invitationMessage }
+      : parsed.data,
+  };
+}
+
 function isCalendarDate(value: string) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) {

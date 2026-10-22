@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AccountHeader } from "@/components/account-header";
 import { StartWeddingForm } from "@/components/start-wedding-form";
@@ -32,16 +33,19 @@ export default async function AccountHomePage() {
             {items.map((item, index) => (
               <li
                 key={item.id}
-                className={`flex items-center justify-between gap-4 px-4 py-3.5 ${
-                  index < items.length - 1 ? "border-b border-line" : ""
-                }`}
+                className={index < items.length - 1 ? "border-b border-line" : ""}
               >
-                <span className="min-w-0 flex-1 wrap-anywhere text-[15px]">
-                  {item.brideName} and {item.groomName}
-                </span>
-                <span className="shrink-0 text-right text-[14px] whitespace-nowrap text-muted">
-                  {formatWeddingDates(item.startDate, item.endDate)}
-                </span>
+                <Link
+                  href={`/home/${item.id}`}
+                  className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-bronze"
+                >
+                  <span className="min-w-0 flex-1 wrap-anywhere text-[15px]">
+                    {item.brideName} and {item.groomName}
+                  </span>
+                  <span className="shrink-0 text-right text-[14px] whitespace-nowrap text-muted">
+                    {formatWeddingDates(item.startDate, item.endDate)}
+                  </span>
+                </Link>
               </li>
             ))}
           </ul>

@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { MongoServerError, ObjectId, type Db } from "mongodb";
 import { assertAuthRate } from "@/lib/auth/rate";
-import { readyDb } from "@/lib/db";
 import type { UserDoc } from "@/lib/auth/session";
+import { readyDb } from "@/lib/db";
 
 const STARTING_EVENTS = [
   "Roka / engagement",
@@ -48,6 +48,8 @@ type EventDoc = {
   _id: ObjectId;
   name: string;
   order: number;
+  date?: string;
+  time?: string;
 };
 
 type MembershipDoc = {
@@ -55,6 +57,19 @@ type MembershipDoc = {
   weddingId: ObjectId;
   role: string;
   relation: string;
+  name?: string;
+};
+
+type GuestReplyDoc = {
+  invitedEventIds?: unknown[];
+  rsvps?: { eventId?: unknown; answer?: string }[];
+};
+
+type TaskDoc = {
+  _id: ObjectId;
+  title: string;
+  assigneeId: ObjectId;
+  status: string;
 };
 
 type WeddingDoc = {
@@ -64,6 +79,44 @@ type WeddingDoc = {
   startDate: string;
   endDate: string;
   publicSlug: string;
+  invitationMessage?: string;
+  budgetTotal?: number;
+};
+
+type ScheduleEvent = {
+  id: string;
+  name: string;
+  order: number;
+  date: string;
+  time: string;
+};
+
+type OpenTask = {
+  id: string;
+  title: string;
+  assignee: string;
+};
+
+export type WeddingDashboard = {
+  id: string;
+  brideName: string;
+  groomName: string;
+  startDate: string;
+  endDate: string;
+  publicSlug: string;
+  invitationMessage: string;
+  role: "admin" | "helper";
+  events: ScheduleEvent[];
+  guests: number;
+  yes: number;
+  no: number;
+  waiting: number;
+  openTasks: number;
+  tasks: OpenTask[];
+  budget: number;
+  spent: number;
+  stillDue: number;
+  family: number;
 };
 
 export async function listWeddings(
@@ -122,6 +175,18 @@ export function formatWeddingDates(startDate: string, endDate: string) {
     return `${start.day} ${start.month} – ${end.day} ${end.month} ${start.year}`;
   }
   return `${start.day} ${start.month} ${start.year} – ${end.day} ${end.month} ${end.year}`;
+}
+
+export function formatRupees(amount: number) {
+  return `₹${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(amount)}`;
+}
+
+export function nextEvent<T extends { date: string }>(events: T[], today: string) {
+  return (
+    events.find((event) => event.date !== "" && event.date >= today) ??
+    events.find((event) => event.date === "") ??
+    events[events.length - 1]
+  );
 }
 
 export async function createWedding(user: UserDoc, input: CreatedWedding) {
@@ -227,6 +292,134 @@ export async function getWeddingForUser(userId: ObjectId, weddingId: string) {
     startDate: wedding.startDate,
     endDate: wedding.endDate,
   };
+}
+
+export async function getWeddingDashboard(userId: ObjectId, weddingId: string) {
+  const access = await memberWedding(userId, weddingId);
+  if (!access) {
+    return null;
+  }
+  const { db, id, wedding, membership } = access;
+  const [events, guests, openTaskCount, openTasks, expenseSums, members] =
+    await Promise.all([
+      db
+        .collection<EventDoc>("events")
+        .find({ weddingId: id })
+        .sort({ order: 1 })
+        .toArray(),
+      db
+        .collection<GuestReplyDoc>("guests")
+        .find({ weddingId: id })
+        .toArray(),
+      db.collection("tasks").countDocuments({ weddingId: id, status: "open" }),
+      db
+        .collection<TaskDoc>("tasks")
+        .find({ weddingId: id, status: "open" })
+        .sort({ _id: 1 })
+        .limit(3)
+        .toArray(),
+      db
+        .collection("expenses")
+        .aggregate<{ spent: number; stillDue: number }>([
+          { $match: { weddingId: id } },
+          {
+            $group: {
+              _id: null,
+              spent: { $sum: "$amount" },
+              stillDue: { $sum: "$amountStillDue" },
+            },
+          },
+        ])
+        .toArray(),
+      db.collection<MembershipDoc>("memberships").find({ weddingId: id }).toArray(),
+    ]);
+  const replies = countReplies(guests);
+  const names = new Map(
+    members.flatMap((member) =>
+      member.userId
+        ? [[member.userId.toString(), member.name ?? ""] as const]
+        : [],
+    ),
+  );
+  return {
+    id: wedding._id.toString(),
+    brideName: wedding.brideName,
+    groomName: wedding.groomName,
+    startDate: wedding.startDate,
+    endDate: wedding.endDate,
+    publicSlug: wedding.publicSlug,
+    invitationMessage: wedding.invitationMessage ?? "",
+    role: membership.role === "admin" ? ("admin" as const) : ("helper" as const),
+    events: events.map((event) => ({
+      id: event._id.toString(),
+      name: event.name,
+      order: event.order,
+      date: event.date ?? "",
+      time: event.time ?? "",
+    })),
+    guests: guests.length,
+    yes: replies.yes,
+    no: replies.no,
+    waiting: replies.waiting,
+    openTasks: openTaskCount,
+    tasks: openTasks.map((task) => ({
+      id: task._id.toString(),
+      title: task.title,
+      assignee: names.get(task.assigneeId.toString()) ?? "",
+    })),
+    budget: wedding.budgetTotal ?? 0,
+    spent: expenseSums[0]?.spent ?? 0,
+    stillDue: expenseSums[0]?.stillDue ?? 0,
+    family: members.length,
+  };
+}
+
+async function memberWedding(userId: ObjectId, weddingId: string) {
+  if (!ObjectId.isValid(weddingId)) {
+    return null;
+  }
+  const id = new ObjectId(weddingId);
+  const db = await readyDb();
+  const membership = await db.collection<MembershipDoc>("memberships").findOne({
+    userId,
+    weddingId: id,
+  });
+  if (!membership) {
+    return null;
+  }
+  const wedding = await db.collection<WeddingDoc>("weddings").findOne({ _id: id });
+  if (!wedding) {
+    return null;
+  }
+  return { db, id, wedding, membership };
+}
+
+function countReplies(guests: GuestReplyDoc[]) {
+  let yes = 0;
+  let no = 0;
+  let waiting = 0;
+  for (const guest of guests) {
+    const invited = new Set((guest.invitedEventIds ?? []).map(String));
+    const choice = new Map<string, "yes" | "no">();
+    for (const reply of guest.rsvps ?? []) {
+      const eventId = String(reply.eventId ?? "");
+      if (!invited.has(eventId)) {
+        continue;
+      }
+      if (reply.answer === "yes" || reply.answer === "no") {
+        choice.set(eventId, reply.answer);
+      }
+    }
+    for (const answer of choice.values()) {
+      if (answer === "yes") {
+        yes += 1;
+      } else {
+        no += 1;
+      }
+    }
+    waiting += invited.size - choice.size;
+  }
+  return { yes, no, waiting };
 }
 
 function readDate(value: string) {

@@ -6,9 +6,17 @@ When a feature is built, update **Now**, then add a log entry at the top of **Lo
 
 ## Now
 
-The app shell, the public landing page, and accounts are in place. A person can sign up, sign in, and sign out. A new account lands on **Start the wedding**. Saving it writes the wedding, an admin membership, and the seven starting events, then shows the congratulations screen. **Continue** returns to `/home`, which lists that wedding with its dates. The wedding workspace is not built. Password reset mail is not sent yet.
+The app shell, the public landing page, and accounts are in place. A person can sign up, sign in, and sign out. A new account lands on **Start the wedding**. Saving it writes the wedding, an admin membership, and the seven starting events, then shows the congratulations screen. **Continue** returns to `/home`, which lists that wedding. Opening it shows the dashboard: the couple, the events, and the real counts. An admin can correct the couple’s names and the wedding dates, and can write the one invitation message. The wedding workspace beyond that screen is not built. Password reset mail is not sent yet.
 
 ## Log
+
+### 2026-10-22 — Couple and invitation
+
+**Couple** and **Invitation** each replace the main column, and **Dashboard** returns to this wedding’s events and counts. An admin can correct the bride’s name, the groom’s name, and the first and last day, and can write the one invitation message. The preview uses the saved names, the saved dates, and the seven events. A helper cannot change either. Inviting the other admin and the family is not built yet.
+
+### 2026-10-22 — The wedding
+
+A wedding on `/home` opens its dashboard. The screen shows the couple, the seven events in order, and the real counts: guests, tasks, and spend start at nothing, and the family count is the people on this wedding.
 
 ### 2026-10-22 — Start the wedding
 

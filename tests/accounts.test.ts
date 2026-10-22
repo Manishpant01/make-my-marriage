@@ -30,10 +30,14 @@ import { assertAuthRate } from "@/lib/auth/rate";
 import { endSession, getOptionalUser, startSession } from "@/lib/auth/session";
 import { createUser, findUserByPassword, signUp } from "@/lib/auth/users";
 import { readyDb } from "@/lib/db";
-import { DuplicateEmailError, RateLimitError } from "@/lib/errors";
+import { DuplicateEmailError, ForbiddenError, RateLimitError } from "@/lib/errors";
+import { updateCouple, updateInvitation } from "@/lib/wedding-update";
 import {
   createWedding,
+  formatRupees,
   formatWeddingDates,
+  getWeddingDashboard,
+  nextEvent,
   getWeddingForUser,
   listWeddings,
 } from "@/lib/weddings";
@@ -359,6 +363,202 @@ test("a failed follow-up still removes the wedding", async () => {
       (error) => error instanceof Error && error.message === "delete failed",
     ),
   ).toBe(true);
+});
+
+test("the dashboard shows this wedding and an empty plan", async () => {
+  const user = await createUser({
+    name: "Priya Shah",
+    email: "priya.dash@example.com",
+    password: "password123",
+  });
+  const created = await createWedding(user, {
+    brideName: "Priya",
+    groomName: "Rahul",
+    startDate: "2027-03-12",
+    endDate: "2027-03-14",
+    relation: "bride",
+    idempotencyKey: "55555555-5555-4555-8555-555555555555",
+  });
+  const dashboard = await getWeddingDashboard(user._id, created.id);
+  expect(dashboard).toMatchObject({
+    brideName: "Priya",
+    role: "admin",
+    guests: 0,
+    openTasks: 0,
+    tasks: [],
+    budget: 0,
+    spent: 0,
+    stillDue: 0,
+    family: 1,
+  });
+  expect(dashboard?.events.map((event) => event.name)).toEqual([
+    "Roka / engagement",
+    "Haldi",
+    "Mehendi",
+    "Sangeet",
+    "Wedding ceremony",
+    "Reception",
+    "Vidaai",
+  ]);
+  expect(dashboard?.events.every((event) => event.date === "")).toBe(true);
+  expect(await getWeddingDashboard(new ObjectId(), created.id)).toBeNull();
+  expect(formatRupees(450000)).toBe("₹4,50,000");
+  expect(formatRupees(0)).toBe("₹0");
+});
+
+test("an admin can correct the couple and the invitation", async () => {
+  const user = await createUser({
+    name: "Priya Shah",
+    email: "priya.dates@example.com",
+    password: "password123",
+  });
+  const helper = await createUser({
+    name: "Meera Shah",
+    email: "meera.helper@example.com",
+    password: "password123",
+  });
+  const created = await createWedding(user, {
+    brideName: "Anika",
+    groomName: "Rohan",
+    startDate: "2027-03-12",
+    endDate: "2027-03-14",
+    relation: "bride",
+    idempotencyKey: "66666666-6666-4666-8666-666666666666",
+  });
+  const db = await readyDb();
+  await db.collection("memberships").insertOne({
+    weddingId: new ObjectId(created.id),
+    userId: helper._id,
+    role: "helper",
+    relation: "sister",
+    name: "Meera Shah",
+    email: "meera.helper@example.com",
+  });
+  const couple = {
+    brideName: "Priya",
+    groomName: "Rahul",
+    startDate: "2027-04-01",
+    endDate: "2027-04-03",
+  };
+  await expect(updateCouple(helper, created.id, couple)).rejects.toBeInstanceOf(
+    ForbiddenError,
+  );
+  await updateCouple(user, created.id, couple);
+  const listed = await listWeddings(user._id, 1, 20);
+  expect(listed.items[0]).toMatchObject(couple);
+  await expect(
+    updateInvitation(helper, created.id, { invitationMessage: "Join us." }),
+  ).rejects.toBeInstanceOf(ForbiddenError);
+  await updateInvitation(user, created.id, { invitationMessage: "Join us." });
+  expect(await getWeddingDashboard(helper._id, created.id)).toMatchObject({
+    role: "helper",
+    family: 2,
+    ...couple,
+    invitationMessage: "Join us.",
+  });
+  await updateCouple(user, created.id, {
+    ...couple,
+    invitationMessage: "Come celebrate.",
+  });
+  expect(await getWeddingDashboard(user._id, created.id)).toMatchObject({
+    ...couple,
+    invitationMessage: "Come celebrate.",
+  });
+});
+
+test("a save fails when the wedding record is gone", async () => {
+  const user = await createUser({
+    name: "Priya Shah",
+    email: "priya.missing@example.com",
+    password: "password123",
+  });
+  const created = await createWedding(user, {
+    brideName: "Anika",
+    groomName: "Rohan",
+    startDate: "2027-03-12",
+    endDate: "2027-03-14",
+    relation: "bride",
+    idempotencyKey: "77777777-7777-4777-8777-777777777777",
+  });
+  const db = await readyDb();
+  await db.collection("weddings").deleteOne({ _id: new ObjectId(created.id) });
+  const couple = {
+    brideName: "Priya",
+    groomName: "Rahul",
+    startDate: "2027-04-01",
+    endDate: "2027-04-03",
+  };
+  expect(await updateCouple(user, created.id, couple)).toBeNull();
+  expect(
+    await updateInvitation(user, created.id, { invitationMessage: "Join us." }),
+  ).toBeNull();
+});
+
+test("one reply per event, and the next event is the soonest dated day", async () => {
+  const user = await createUser({
+    name: "Priya Shah",
+    email: "priya.replies@example.com",
+    password: "password123",
+  });
+  const created = await createWedding(user, {
+    brideName: "Anika",
+    groomName: "Rohan",
+    startDate: "2027-03-12",
+    endDate: "2027-03-14",
+    relation: "bride",
+    idempotencyKey: "88888888-8888-4888-8888-888888888888",
+  });
+  const db = await readyDb();
+  const weddingId = new ObjectId(created.id);
+  const dashboard = await getWeddingDashboard(user._id, created.id);
+  const events = dashboard?.events ?? [];
+  const roka = events[0];
+  const ceremony = events[4];
+  await db.collection("guests").insertOne({
+    weddingId,
+    invitedEventIds: [roka.id, events[1].id, ceremony.id],
+    rsvps: [
+      { eventId: ceremony.id, answer: "yes" },
+      { eventId: ceremony.id, answer: "yes" },
+      { eventId: roka.id, answer: "yes" },
+      { eventId: roka.id, answer: "no" },
+    ],
+  });
+  await db.collection("tasks").insertMany([
+    {
+      weddingId,
+      title: "Book the hall",
+      assigneeId: user._id,
+      status: "open",
+    },
+    {
+      weddingId,
+      title: "Book the hall",
+      assigneeId: user._id,
+      status: "open",
+    },
+  ]);
+  await db.collection("events").updateOne(
+    { _id: new ObjectId(ceremony.id) },
+    { $set: { date: "2027-03-14" } },
+  );
+  const again = await getWeddingDashboard(user._id, created.id);
+  expect(again).toMatchObject({ yes: 1, no: 1, waiting: 1 });
+  expect(again?.tasks).toHaveLength(2);
+  expect(new Set(again?.tasks.map((task) => task.id)).size).toBe(2);
+  const schedule = again?.events ?? [];
+  expect(nextEvent(schedule, "2027-03-01")?.id).toBe(ceremony.id);
+  expect(nextEvent(schedule, "2027-04-01")?.name).toBe("Roka / engagement");
+  expect(nextEvent(events, "2027-03-01")?.name).toBe("Roka / engagement");
+  expect(
+    nextEvent(
+      [
+        { name: "Haldi", date: "2026-01-01" },
+        { name: "Vidaai", date: "2026-01-02" },
+      ],
+      "2027-03-01",
+    )?.name,
+  ).toBe("Vidaai");
 });
 
 function weddingRequest(brideName: string) {

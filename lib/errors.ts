@@ -19,6 +19,13 @@ export class RateLimitError extends Error {
   }
 }
 
+export class ForbiddenError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ForbiddenError";
+  }
+}
+
 export function jsonError(error: string, status: number) {
   return Response.json({ error }, { status });
 }
@@ -26,6 +33,9 @@ export function jsonError(error: string, status: number) {
 export function authFailure(error: unknown) {
   if (error instanceof RateLimitError) {
     return jsonError(error.message, 429);
+  }
+  if (error instanceof ForbiddenError) {
+    return jsonError(error.message, 403);
   }
   if (error instanceof DuplicateEmailError) {
     return jsonError(error.message, 409);

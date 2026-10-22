@@ -5,6 +5,7 @@ import {
   firstIssue,
   forgotPasswordSchema,
   loginSchema,
+  parseWeddingPatch,
   signupSchema,
 } from "@/lib/validators";
 
@@ -100,5 +101,69 @@ test("forgot password requires an email", () => {
   expect(parsed.success).toBe(false);
   if (!parsed.success) {
     expect(firstIssue(parsed.error)).toBe("Enter a valid email.");
+  }
+});
+
+test("the couple form refuses a last day before the first", () => {
+  const parsed = parseWeddingPatch({
+    brideName: "Anika",
+    groomName: "Rohan",
+    startDate: "2027-03-14",
+    endDate: "2027-03-12",
+  });
+  expect(parsed.ok).toBe(false);
+  if (!parsed.ok) {
+    expect(parsed.message).toBe("The last day is before the first day.");
+  }
+});
+
+test("a save can correct the couple and the message together", () => {
+  expect(
+    parseWeddingPatch({
+      brideName: " Anika ",
+      groomName: "Rohan",
+      startDate: "2027-03-12",
+      endDate: "2027-03-14",
+      invitationMessage: "  Join us.  ",
+    }),
+  ).toEqual({
+    ok: true,
+    kind: "couple",
+    data: {
+      brideName: "Anika",
+      groomName: "Rohan",
+      startDate: "2027-03-12",
+      endDate: "2027-03-14",
+      invitationMessage: "Join us.",
+    },
+  });
+  const parsed = parseWeddingPatch({
+    brideName: "Anika",
+    groomName: "Rohan",
+    startDate: "2027-03-12",
+    endDate: "2027-03-14",
+    invitationMessage: "x".repeat(401),
+  });
+  expect(parsed.ok).toBe(false);
+  if (!parsed.ok) {
+    expect(parsed.message).toBe("That message is too long.");
+  }
+});
+
+test("the invitation form keeps a short message and allows none", () => {
+  expect(parseWeddingPatch({ invitationMessage: "  Join us.  " })).toEqual({
+    ok: true,
+    kind: "invitation",
+    data: { invitationMessage: "Join us." },
+  });
+  expect(parseWeddingPatch({ invitationMessage: "" })).toEqual({
+    ok: true,
+    kind: "invitation",
+    data: { invitationMessage: "" },
+  });
+  const parsed = parseWeddingPatch({ invitationMessage: "x".repeat(401) });
+  expect(parsed.ok).toBe(false);
+  if (!parsed.ok) {
+    expect(parsed.message).toBe("That message is too long.");
   }
 });

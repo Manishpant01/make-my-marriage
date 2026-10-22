@@ -16,6 +16,7 @@ export function AuthScreen({
           src="/landing-hero.jpg"
           alt=""
           fill
+          loading="eager"
           sizes="50vw"
           className="object-cover"
         />

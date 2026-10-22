@@ -109,6 +109,7 @@ export default function HomePage() {
               alt="Intimate North Indian wedding moment with bride and groom"
               fill
               priority
+              loading="eager"
               sizes="(min-width: 1024px) 640px, 100vw"
               className="object-cover"
             />
