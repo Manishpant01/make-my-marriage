@@ -6,9 +6,13 @@ When a feature is built, update **Now**, then add a log entry at the top of **Lo
 
 ## Now
 
-The app shell, the public landing page, and accounts are in place. A person can sign up, sign in, and sign out. `/home` lists that person’s weddings and is empty until a wedding exists. Creating a wedding is not built. Password reset mail is not sent yet.
+The app shell, the public landing page, and accounts are in place. A person can sign up, sign in, and sign out. A new account lands on **Start the wedding**. Saving it writes the wedding, an admin membership, and the seven starting events, then shows the congratulations screen. **Continue** returns to `/home`, which lists that wedding with its dates. The wedding workspace is not built. Password reset mail is not sent yet.
 
 ## Log
+
+### 2026-10-22 — Start the wedding
+
+`/home` shows **Start the wedding** until this person has a wedding. The form takes the bride’s name, the groom’s name, the first date, the last date, and whether they are the bride or the groom. `POST /api/weddings` writes the wedding, the creator’s admin membership, and the seven events in order. The wedding gets a unique `publicSlug` for the future public page. Saving opens `/home/created`, the congratulations card with the couple’s names and the dates. **Continue** lists the wedding on `/home`. A repeated save returns that same wedding, and creating weddings stops after ten attempts. The setup photograph is a cream invitation on linen.
 
 ### 2026-10-20 — Accounts
 

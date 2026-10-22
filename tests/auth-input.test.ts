@@ -1,6 +1,7 @@
 import { afterEach, expect, test } from "vitest";
 import { clientAddress } from "@/lib/auth/rate";
 import {
+  createWeddingSchema,
   firstIssue,
   forgotPasswordSchema,
   loginSchema,
@@ -59,6 +60,38 @@ test("an email that is not text is a form message", () => {
   expect(parsed.success).toBe(false);
   if (!parsed.success) {
     expect(firstIssue(parsed.error)).toBe("Enter a valid email.");
+  }
+});
+
+test("a wedding refuses a last day before the first", () => {
+  const parsed = createWeddingSchema.safeParse({
+    brideName: "Priya",
+    groomName: "Rahul",
+    startDate: "2027-03-14",
+    endDate: "2027-03-12",
+    relation: "bride",
+    idempotencyKey: "11111111-1111-4111-8111-111111111111",
+  });
+  expect(parsed.success).toBe(false);
+  if (!parsed.success) {
+    expect(firstIssue(parsed.error)).toBe(
+      "The last day is before the first day.",
+    );
+  }
+});
+
+test("a wedding refuses a date that is not a day", () => {
+  const parsed = createWeddingSchema.safeParse({
+    brideName: "Priya",
+    groomName: "Rahul",
+    startDate: "2027-02-31",
+    endDate: "2027-03-02",
+    relation: "groom",
+    idempotencyKey: "22222222-2222-4222-8222-222222222222",
+  });
+  expect(parsed.success).toBe(false);
+  if (!parsed.success) {
+    expect(firstIssue(parsed.error)).toBe("Enter a real date.");
   }
 });
 

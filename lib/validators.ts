@@ -31,6 +31,51 @@ export const forgotPasswordSchema = z.object({
   email,
 });
 
+const calendarDate = z
+  .string("Enter a date.")
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a date.")
+  .refine(isCalendarDate, "Enter a real date.");
+
+export const createWeddingSchema = z
+  .object({
+    brideName: z
+      .string("Enter the bride’s name.")
+      .trim()
+      .min(1, "Enter the bride’s name.")
+      .max(80, "That name is too long."),
+    groomName: z
+      .string("Enter the groom’s name.")
+      .trim()
+      .min(1, "Enter the groom’s name.")
+      .max(80, "That name is too long."),
+    startDate: calendarDate,
+    endDate: calendarDate,
+    relation: z.enum(["bride", "groom"], {
+      error: "Choose the bride or the groom.",
+    }),
+    idempotencyKey: z.uuid("Check the wedding."),
+  })
+  .refine((value) => value.endDate >= value.startDate, {
+    error: "The last day is before the first day.",
+    path: ["endDate"],
+  });
+
+function isCalendarDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    return false;
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
 export function firstIssue(error: z.ZodError) {
   return error.issues[0]?.message ?? "Check the form.";
 }

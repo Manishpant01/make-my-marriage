@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test, vi } from "vitest";
 import { MongoMemoryServer } from "mongodb-memory-server";
-import { ObjectId } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 
 const cookieJar = vi.hoisted(() => ({
   values: new Map<string, string>(),
@@ -31,7 +31,12 @@ import { endSession, getOptionalUser, startSession } from "@/lib/auth/session";
 import { createUser, findUserByPassword, signUp } from "@/lib/auth/users";
 import { readyDb } from "@/lib/db";
 import { DuplicateEmailError, RateLimitError } from "@/lib/errors";
-import { listWeddings } from "@/lib/weddings";
+import {
+  createWedding,
+  formatWeddingDates,
+  getWeddingForUser,
+  listWeddings,
+} from "@/lib/weddings";
 
 let mongo: MongoMemoryServer;
 let uri = "";
@@ -198,3 +203,175 @@ test("wedding pages stay in a stable order", async () => {
   const second = await listWeddings(userId, 2, 2);
   expect(second.items.map((item) => item.brideName)).toEqual(["C"]);
 });
+
+test("starting a wedding writes the couple, the admin, and seven events", async () => {
+  const user = await createUser({
+    name: "Priya Shah",
+    email: "priya.setup@example.com",
+    password: "password123",
+  });
+  const created = await createWedding(user, {
+    brideName: "Priya",
+    groomName: "Rahul",
+    startDate: "2027-03-12",
+    endDate: "2027-03-14",
+    relation: "bride",
+    idempotencyKey: "11111111-1111-4111-8111-111111111111",
+  });
+  expect(created.publicSlug).not.toMatch(/priya|rahul/i);
+  expect(created.events.map((event) => event.name)).toEqual([
+    "Roka / engagement",
+    "Haldi",
+    "Mehendi",
+    "Sangeet",
+    "Wedding ceremony",
+    "Reception",
+    "Vidaai",
+  ]);
+  expect(created.events.map((event) => event.order)).toEqual([
+    1, 2, 3, 4, 5, 6, 7,
+  ]);
+  const db = await readyDb();
+  const membership = await db.collection("memberships").findOne({
+    weddingId: new ObjectId(created.id),
+  });
+  expect(membership).toMatchObject({
+    role: "admin",
+    relation: "bride",
+    name: "Priya Shah",
+    email: "priya.setup@example.com",
+    userId: user._id,
+  });
+  expect(membership).not.toHaveProperty("inviteToken");
+  const listed = await listWeddings(user._id, 1, 20);
+  expect(listed.items[0]).toMatchObject({
+    brideName: "Priya",
+    groomName: "Rahul",
+    startDate: "2027-03-12",
+    endDate: "2027-03-14",
+  });
+  expect(await getWeddingForUser(user._id, created.id)).toMatchObject({
+    brideName: "Priya",
+  });
+  expect(await getWeddingForUser(new ObjectId(), created.id)).toBeNull();
+  expect(formatWeddingDates("2027-03-12", "2027-03-14")).toBe(
+    "12–14 March 2027",
+  );
+  expect(formatWeddingDates("2027-03-12", "2027-03-12")).toBe("12 March 2027");
+});
+
+test("the same save returns the same wedding", async () => {
+  const user = await createUser({
+    name: "Anika Shah",
+    email: "anika.save@example.com",
+    password: "password123",
+  });
+  const input = {
+    brideName: "Anika",
+    groomName: "Rahul",
+    startDate: "2027-03-12",
+    endDate: "2027-03-14",
+    relation: "bride" as const,
+    idempotencyKey: "33333333-3333-4333-8333-333333333333",
+  };
+  const [first, second] = await Promise.all([
+    createWedding(user, input),
+    createWedding(user, input),
+  ]);
+  expect(second.id).toBe(first.id);
+  const db = await readyDb();
+  expect(
+    await db.collection("weddings").countDocuments({ brideName: "Anika" }),
+  ).toBe(1);
+  expect((await createWedding(user, input)).id).toBe(first.id);
+});
+
+test("creating weddings stops after ten attempts", async () => {
+  const user = await createUser({
+    name: "Meera Shah",
+    email: "meera.limit@example.com",
+    password: "password123",
+  });
+  await startSession(user._id);
+  const { POST } = await import("@/app/api/weddings/route");
+  for (let index = 0; index < 10; index += 1) {
+    const response = await POST(weddingRequest(`Meera ${index}`));
+    expect(response.status).toBe(200);
+  }
+  const blocked = await POST(weddingRequest("Meera again"));
+  expect(blocked.status).toBe(429);
+});
+
+test("a failed follow-up still removes the wedding", async () => {
+  const user = await createUser({
+    name: "Leela Shah",
+    email: "leela.cleanup@example.com",
+    password: "password123",
+  });
+  const proto = Collection.prototype as unknown as {
+    insertOne: (this: Collection, ...args: never[]) => Promise<unknown>;
+    deleteMany: (this: Collection, ...args: never[]) => Promise<unknown>;
+  };
+  const insertOne = proto.insertOne;
+  const deleteMany = proto.deleteMany;
+  proto.insertOne = async function (this: Collection, ...args) {
+    if (this.collectionName === "memberships") {
+      throw new Error("membership failed");
+    }
+    return insertOne.apply(this, args);
+  };
+  proto.deleteMany = async function (this: Collection, ...args) {
+    if (this.collectionName === "events") {
+      throw new Error("delete failed");
+    }
+    return deleteMany.apply(this, args);
+  };
+  const reported: unknown[] = [];
+  const errorLog = console.error;
+  console.error = (value: unknown) => {
+    reported.push(value);
+  };
+  try {
+    await expect(
+      createWedding(user, {
+        brideName: "Leftover",
+        groomName: "Rahul",
+        startDate: "2027-03-12",
+        endDate: "2027-03-14",
+        relation: "bride",
+        idempotencyKey: "44444444-4444-4444-8444-444444444444",
+      }),
+    ).rejects.toThrow("membership failed");
+  } finally {
+    proto.insertOne = insertOne;
+    proto.deleteMany = deleteMany;
+    console.error = errorLog;
+  }
+  const db = await readyDb();
+  expect(
+    await db.collection("weddings").countDocuments({ brideName: "Leftover" }),
+  ).toBe(0);
+  expect(
+    await db.collection("weddingCreates").countDocuments({ userId: user._id }),
+  ).toBe(0);
+  expect(
+    reported.some(
+      (error) => error instanceof Error && error.message === "delete failed",
+    ),
+  ).toBe(true);
+});
+
+function weddingRequest(brideName: string) {
+  return new Request("http://localhost/api/weddings", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      brideName,
+      groomName: "Rahul",
+      startDate: "2027-03-12",
+      endDate: "2027-03-14",
+      relation: "bride",
+      idempotencyKey: crypto.randomUUID(),
+    }),
+  });
+}

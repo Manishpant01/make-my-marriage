@@ -1,11 +1,11 @@
 import { logout } from "@/app/home/actions";
 
-export function LogoutButton() {
+export function LogoutButton({ className }: { className?: string }) {
   return (
     <form action={logout}>
       <button
         type="submit"
-        className="text-[15px] transition-colors hover:text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bronze"
+        className={`transition-colors hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bronze ${className ?? "text-[15px]"}`}
       >
         Log out
       </button>
