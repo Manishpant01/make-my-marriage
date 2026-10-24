@@ -32,6 +32,7 @@ yarn-error.log*
 
 # local MCP credentials
 .cursor/mcp.json
+.codex/config.toml
 
 # vercel
 .vercel

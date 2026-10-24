@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { Entrance } from "@/components/entrance";
+import { entranceTiming } from "@/lib/animation";
 import { buttonClass, Wordmark } from "@/components/wordmark";
 
 export const metadata: Metadata = {
@@ -88,8 +90,8 @@ export default function HomePage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-[1440px] lg:grid lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-16 lg:pb-28 lg:pt-24">
-          <div className="px-6 pb-8 pt-10 lg:px-0 lg:py-0 lg:pr-6">
-            <h1 className="mb-4 text-[34px] font-medium leading-[1.18] tracking-[-0.02em] lg:mb-7 lg:text-[52px] lg:leading-[1.12]">
+          <Entrance className="px-6 pb-8 pt-10 lg:px-0 lg:py-0 lg:pr-6">
+            <h1 className="mb-4 font-display text-[34px] font-medium leading-[1.18] tracking-[-0.02em] lg:mb-7 lg:text-[48px] lg:leading-[1.12]">
               The wedding, in one place.
             </h1>
             <p className="mb-7 max-w-[480px] text-[16px] leading-[1.55] text-muted lg:mb-10 lg:text-[18px] lg:leading-[1.6]">
@@ -102,8 +104,8 @@ export default function HomePage() {
             >
               Start a wedding
             </Link>
-          </div>
-          <div className="relative aspect-[4/3] bg-line">
+          </Entrance>
+          <Entrance kind="fade" duration={entranceTiming.heroImageDuration} delay={entranceTiming.heroImageDelay} className="relative aspect-[4/3] bg-line">
             <Image
               src="/landing-hero.jpg"
               alt="Intimate North Indian wedding moment with bride and groom"
@@ -113,10 +115,10 @@ export default function HomePage() {
               sizes="(min-width: 1024px) 640px, 100vw"
               className="object-cover"
             />
-          </div>
+          </Entrance>
         </section>
 
-        <section className="mx-auto max-w-[1440px] px-6 py-12 lg:grid lg:grid-cols-3 lg:gap-16 lg:border-t lg:border-line lg:px-16 lg:py-24">
+        <Entrance as="section" inView className="mx-auto max-w-[1440px] px-6 py-12 lg:grid lg:grid-cols-3 lg:gap-16 lg:border-t lg:border-line lg:px-16 lg:py-24">
           {pillars.map((item, index) => (
             <div
               key={item.title}
@@ -137,11 +139,11 @@ export default function HomePage() {
               </p>
             </div>
           ))}
-        </section>
+        </Entrance>
 
         <section className="mx-auto max-w-[1440px] border-t border-line px-6 pb-14 pt-8 lg:px-16 lg:py-24">
           <div className="lg:mx-auto lg:grid lg:max-w-[960px] lg:grid-cols-2 lg:gap-12">
-            <div>
+            <Entrance inView>
               <div className="mb-4 lg:mb-6 lg:text-center">
                 <h2 className="mb-1 text-[17px] font-medium tracking-[-0.01em]">
                   What the family works on
@@ -151,8 +153,8 @@ export default function HomePage() {
                 </p>
               </div>
               <Rows items={tasks} />
-            </div>
-            <div className="mt-8 lg:mt-0">
+            </Entrance>
+            <Entrance inView className="mt-8 lg:mt-0">
               <div className="mb-4 lg:mb-6 lg:text-center">
                 <h2 className="text-[17px] font-medium tracking-[-0.01em] lg:mb-1">
                   Coming up
@@ -162,7 +164,7 @@ export default function HomePage() {
                 </p>
               </div>
               <Rows items={upcoming} />
-            </div>
+            </Entrance>
           </div>
         </section>
       </main>

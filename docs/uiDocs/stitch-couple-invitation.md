@@ -1,5 +1,9 @@
 # Stitch prompt — Couple and Invitation
 
+Follow [typography.md](typography.md) for the approved Outfit + Fraunces font system; it overrides older font-family instructions in this prompt.
+
+Apply `stitch-dashboard-life.md` after this layout prompt for the latest approved shared header, sidebar, and motion. It retains existing fonts and supersedes the older interaction instructions below.
+
 Paste this into the existing MakeMyMarriage dashboard. It replaces the Couple frame and the Invitation frame. The header stays. The sidebar gains a Dashboard link, and the form uses the full main column.
 
 ## Scope

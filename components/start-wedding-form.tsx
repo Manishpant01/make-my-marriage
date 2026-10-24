@@ -3,6 +3,8 @@
 import { useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { Entrance } from "@/components/entrance";
+import { entranceTiming } from "@/lib/animation";
 import { buttonClass, fieldClass } from "@/components/wordmark";
 
 const relations = [
@@ -64,16 +66,18 @@ export function StartWeddingForm() {
 
   return (
     <div className="mx-auto flex w-full max-w-[680px] flex-col px-5 pt-8 pb-14 lg:px-0 lg:pt-16 lg:pb-24">
+      <Entrance>
       <p className="mb-1 text-[13px] font-medium text-muted lg:mb-1.5">
         Your wedding
       </p>
-      <h1 className="mb-2 text-[26px] font-medium leading-tight tracking-tight lg:text-[32px]">
+      <h1 className="mb-2 text-[26px] font-medium leading-[1.3] tracking-tight lg:text-[30px]">
         Start the wedding
       </h1>
       <p className="mb-6 text-[14px] leading-relaxed text-muted lg:mb-8 lg:text-[15px]">
         The couple’s names, and the first and last day.
       </p>
-      <div className="relative mb-6 h-40 overflow-hidden rounded-lg bg-line lg:mb-8 lg:h-60">
+      </Entrance>
+      <Entrance delay={entranceTiming.stagger} className="relative mb-6 h-40 overflow-hidden rounded-lg bg-line lg:mb-8 lg:h-60">
         <Image
           src="/wedding-setup.jpg"
           alt="A cream invitation on linen with a small flower"
@@ -82,7 +86,8 @@ export function StartWeddingForm() {
           sizes="(min-width: 1024px) 680px, 100vw"
           className="object-cover"
         />
-      </div>
+      </Entrance>
+      <Entrance delay={2 * entranceTiming.stagger}>
       <form className="border-t border-line pt-6 lg:pt-8" onSubmit={onSubmit}>
         {error ? (
           <p
@@ -109,7 +114,7 @@ export function StartWeddingForm() {
                     aria-pressed={selected}
                     disabled={pending}
                     onClick={() => setRelation(item.value)}
-                    className={`h-[46px] rounded-lg border bg-surface text-[14px] lg:text-[15px] ${
+                    className={`h-[46px] rounded-lg border bg-surface text-[14px] transition-colors duration-160 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze lg:text-[15px] ${
                       selected
                         ? "border-bronze font-medium text-ink"
                         : "border-line font-normal text-muted"
@@ -132,6 +137,7 @@ export function StartWeddingForm() {
           </div>
         </div>
       </form>
+      </Entrance>
     </div>
   );
 }

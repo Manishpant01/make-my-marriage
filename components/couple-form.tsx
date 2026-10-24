@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/components/toast";
 import { buttonClass, fieldClass } from "@/components/wordmark";
 
-const saveClass = `${buttonClass} h-12 w-full px-8 text-[14px] transition duration-180 ease-out hover:bg-bronze-hover hover:opacity-100 motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 sm:w-auto`;
+const saveClass = `${buttonClass} h-12 w-full px-8 text-[14px] transition duration-180 ease-out enabled:hover:bg-bronze-hover enabled:hover:opacity-100 motion-safe:enabled:hover:-translate-y-px motion-safe:enabled:active:translate-y-0 disabled:transform-none sm:w-auto`;
 
 export function CoupleForm({
   weddingId,
@@ -151,7 +151,7 @@ export function SectionTitle({ title }: { title: string }) {
   return (
     <div className="mb-2 flex items-baseline justify-between gap-4">
       <h1 className="text-[24px] font-medium tracking-tight">{title}</h1>
-      <span className="text-[13px] text-muted">Admins</span>
+      <span className="text-[11px] font-medium tracking-[0.06em] text-muted uppercase">Admins</span>
     </div>
   );
 }

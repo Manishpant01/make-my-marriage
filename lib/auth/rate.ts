@@ -29,34 +29,35 @@ export function clientAddress(request: Request) {
 export async function assertAuthRate(key: string) {
   const db = await readyDb();
   const attempts = db.collection<AttemptDoc>("authAttempts");
-  const now = new Date();
-  const existing = await attempts.findOne({ key });
-  if (existing && existing.resetAt > now && existing.count >= MAX_ATTEMPTS) {
-    throw new RateLimitError();
-  }
-  if (!existing || existing.resetAt <= now) {
+  // A single document update reserves each attempt, including the first one.
+  // Use database time so delayed requests cannot reset a newer window.
+  const expired = { $lte: [{ $ifNull: ["$resetAt", new Date(0)] }, "$$NOW"] };
+  const update = [{
+    $set: {
+      count: {
+        $cond: [expired, 1, {
+          $min: [{ $add: [{ $ifNull: ["$count", 0] }, 1] }, MAX_ATTEMPTS + 1],
+        }],
+      },
+      resetAt: { $cond: [expired, { $add: ["$$NOW", WINDOW_MS] }, "$resetAt"] },
+    },
+  }];
+  for (let retry = 0; retry < 3; retry += 1) {
     try {
-      await attempts.updateOne(
-        { key },
-        { $set: { count: 1, resetAt: new Date(now.getTime() + WINDOW_MS) } },
-        { upsert: true },
-      );
-    } catch (error) {
-      if (
-        typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === 11000
-      ) {
-        await attempts.updateOne({ key }, { $inc: { count: 1 } });
-        return;
+      const reserved = await attempts.findOneAndUpdate({ key }, update, {
+        upsert: true,
+        returnDocument: "after",
+      });
+      if (!reserved || reserved.count > MAX_ATTEMPTS) {
+        throw new RateLimitError();
       }
+      return;
+    } catch (error) {
+      // Concurrent first requests may race on the unique key. The losing insert
+      // reserved nothing; retry the same atomic operation against the winner.
+      if (retry < 2 && typeof error === "object" && error !== null &&
+          "code" in error && error.code === 11000) continue;
       throw error;
     }
-    return;
   }
-  await attempts.updateOne(
-    { key, resetAt: existing.resetAt },
-    { $inc: { count: 1 } },
-  );
 }

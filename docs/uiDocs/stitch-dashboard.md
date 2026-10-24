@@ -1,5 +1,9 @@
 # Stitch prompt — dashboard
 
+Follow [typography.md](typography.md) for the approved Outfit + Fraunces font system; it overrides older font-family instructions in this prompt.
+
+For application motion, follow [animations.md](animations.md), including shared desktop/mobile behavior and animation requirements for future workspace features. Its interaction rules take precedence over this older visual prompt.
+
 Stitch already has this dashboard. Paste the update below into that design. Do not start over.
 
 ## Scope

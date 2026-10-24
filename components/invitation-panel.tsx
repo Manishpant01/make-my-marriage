@@ -2,6 +2,8 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { WeddingPanel } from "@/components/wedding-panel";
 import { toast } from "@/components/toast";
 import { fieldClass } from "@/components/wordmark";
 import { FormActions, FormError, SectionTitle } from "@/components/couple-form";
@@ -68,6 +70,7 @@ export function InvitationPanel({
 
   return (
     <div className="grid w-full grid-cols-1 items-start gap-8 lg:grid-cols-2">
+      <WeddingPanel>
       <form
         onSubmit={onSubmit}
         className="w-full rounded-lg border border-line bg-surface p-6 lg:p-10"
@@ -91,19 +94,20 @@ export function InvitationPanel({
         />
         <FormActions pending={pending} />
       </form>
-      <div className="w-full rounded-lg border border-line bg-surface p-3">
+      </WeddingPanel>
+      <WeddingPanel delay={0.04} className="w-full rounded-lg border border-line bg-surface p-3">
         <div className="rounded border border-line px-6 py-10 text-center lg:px-10">
-          <img
+          <Image
             src="/marigold.svg"
             alt=""
             width={48}
             height={64}
             className="mx-auto h-24 w-auto"
           />
-          <h2 className="mt-6 text-[20px] font-medium">
+          <h2 className="mt-6 wrap-anywhere font-display text-[28px] font-medium leading-[1.25] tracking-[-0.02em] lg:text-[32px]">
             {brideName} and {groomName}
           </h2>
-          <p className="mt-1 text-[13px] text-muted">{datesLabel}</p>
+          <p className="mt-1 text-[13px] tabular-nums text-muted">{datesLabel}</p>
           <p
             className={`mt-4 text-[13px] whitespace-pre-wrap break-words ${
               shown ? "text-ink" : "text-muted"
@@ -118,7 +122,7 @@ export function InvitationPanel({
             ))}
           </div>
         </div>
-      </div>
+      </WeddingPanel>
     </div>
   );
 }

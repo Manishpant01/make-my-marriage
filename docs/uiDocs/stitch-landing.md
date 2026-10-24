@@ -1,5 +1,9 @@
 # Stitch prompt — landing page
 
+Follow [typography.md](typography.md) for the approved Outfit + Fraunces font system; it overrides older font-family instructions in this prompt.
+
+For application animations, follow [animations.md](animations.md): hero content entrance, a short delayed image fade, and one-time lower-section reveals on desktop and mobile.
+
 Stitch already has this landing page. Paste the update prompt below into that design. Do not start over.
 
 ## Update prompt

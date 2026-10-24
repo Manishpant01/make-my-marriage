@@ -1,5 +1,9 @@
 # Stitch prompt — the wedding is ready
 
+Follow [typography.md](typography.md) for the approved Outfit + Fraunces font system; it overrides older font-family instructions in this prompt.
+
+For application animations, follow [animations.md](animations.md): reveal the congratulations card as one panel and keep Continue immediately usable.
+
 Paste this into Stitch as a new design. Match the landing page and the other screens: same logo, same ivory, same type, same bronze. This screen is a congratulations card. Do not reuse the log in split, and do not reuse the start-a-wedding layout.
 
 ## Prompt

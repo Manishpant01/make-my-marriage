@@ -69,7 +69,7 @@ const coupleFields = z
     groomName: personName("Enter the groom’s name."),
     startDate: calendarDate,
     endDate: calendarDate,
-  })
+  }, { error: "Check the form." })
   .refine((value) => value.endDate >= value.startDate, {
     error: "The last day is before the first day.",
     path: ["endDate"],
@@ -80,7 +80,7 @@ const invitationFields = z.object({
     .string("Enter a message.")
     .trim()
     .max(400, "That message is too long."),
-});
+}, { error: "Check the form." });
 
 export function parseWeddingPatch(body: unknown) {
   const record =

@@ -561,6 +561,62 @@ test("one reply per event, and the next event is the soonest dated day", async (
   ).toBe("Vidaai");
 });
 
+test("parallel requests cannot bypass fresh, active, or expired rate windows", async () => {
+  const db = await readyDb();
+  const cases = [
+    { key: "parallel:fresh", remaining: 10 },
+    { key: "parallel:active", remaining: 2 },
+    { key: "parallel:expired", remaining: 10 },
+  ];
+  await db.collection("authAttempts").insertMany([
+    { key: "parallel:active", count: 8, resetAt: new Date(Date.now() + 900000) },
+    { key: "parallel:expired", count: 10, resetAt: new Date(Date.now() - 1000) },
+  ]);
+  for (const { key, remaining } of cases) {
+    const results = await Promise.allSettled(
+      Array.from({ length: 20 }, () => assertAuthRate(key)),
+    );
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(remaining);
+    const failures = results.filter((result) => result.status === "rejected");
+    expect(failures).toHaveLength(20 - remaining);
+    for (const result of failures) {
+      if (result.status === "rejected") expect(result.reason).toBeInstanceOf(RateLimitError);
+    }
+    await expect(assertAuthRate(key)).rejects.toBeInstanceOf(RateLimitError);
+    expect(await db.collection("authAttempts").countDocuments({ key })).toBe(1);
+  }
+});
+
+test("twenty simultaneous invitation saves allow exactly ten", async () => {
+  const user = await createUser({ name: "Anika", email: "parallel-saves@example.com", password: "password123" });
+  const wedding = await createWedding(user, {
+    brideName: "Anika", groomName: "Rohan", relation: "bride",
+    startDate: "2027-03-12", endDate: "2027-03-14", idempotencyKey: crypto.randomUUID(),
+  });
+  await startSession(user._id);
+  const { PATCH } = await import("@/app/api/weddings/[weddingId]/route");
+  const responses = await Promise.all(Array.from({ length: 20 }, (_, index) => PATCH(
+    new Request(`http://localhost/api/weddings/${wedding.id}`, {
+      method: "PATCH", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ invitationMessage: `Invitation ${index}` }),
+    }),
+    { params: Promise.resolve({ weddingId: wedding.id }) },
+  )));
+  expect(responses.filter((response) => response.status === 200)).toHaveLength(10);
+  expect(responses.filter((response) => response.status === 429)).toHaveLength(10);
+});
+
+test("invalid wedding body shapes receive a friendly HTTP 400", async () => {
+  const { PATCH } = await import("@/app/api/weddings/[weddingId]/route");
+  for (const body of [null, [], "text", 42, true]) {
+    const response = await PATCH(new Request("http://localhost/api/weddings/invalid", {
+      method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+    }), { params: Promise.resolve({ weddingId: "invalid" }) });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: "Check the form." });
+  }
+});
+
 function weddingRequest(brideName: string) {
   return new Request("http://localhost/api/weddings", {
     method: "POST",

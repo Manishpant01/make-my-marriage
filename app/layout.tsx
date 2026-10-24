@@ -1,11 +1,19 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Outfit, Fraunces } from "next/font/google";
+import { AnimationScope } from "@/components/entrance";
 import { ToastProvider } from "@/components/toast";
 import "./globals.css";
 
-const geist = Geist({
+const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-geist",
+  variable: "--font-outfit",
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -20,9 +28,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geist.variable} bg-ivory font-sans text-ink antialiased`}
+        className={`${outfit.variable} ${fraunces.variable} bg-ivory font-sans font-normal text-ink antialiased`}
       >
-        <ToastProvider>{children}</ToastProvider>
+        <AnimationScope><ToastProvider>{children}</ToastProvider></AnimationScope>
       </body>
     </html>
   );

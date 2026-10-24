@@ -1,5 +1,9 @@
 # Stitch prompt — start a wedding
 
+Follow [typography.md](typography.md) for the approved Outfit + Fraunces font system; it overrides older font-family instructions in this prompt.
+
+For application animations, follow [animations.md](animations.md): title, photograph, and form entrances with stable name/date fields and role selection on desktop and mobile.
+
 Paste this into Stitch as a new design. Match the landing page and the log in screens that already exist: same logo, same ivory, same type, same bronze. This is a new layout. Do not reuse the log in split.
 
 ## Prompt

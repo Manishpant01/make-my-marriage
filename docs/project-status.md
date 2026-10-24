@@ -6,9 +6,25 @@ When a feature is built, update **Now**, then add a log entry at the top of **Lo
 
 ## Now
 
-The app shell, the public landing page, and accounts are in place. A person can sign up, sign in, and sign out. A new account lands on **Start the wedding**. Saving it writes the wedding, an admin membership, and the seven starting events, then shows the congratulations screen. **Continue** returns to `/home`, which lists that wedding. Opening it shows the dashboard: the couple, the events, and the real counts. An admin can correct the couple’s names and the wedding dates, and can write the one invitation message. The wedding workspace beyond that screen is not built. Password reset mail is not sent yet.
+The app shell, the public landing page, and accounts are in place. A person can sign up, sign in, and sign out. A new account lands on **Start the wedding**. Saving it writes the wedding, an admin membership, and the seven starting events, then shows the congratulations screen. **Continue** returns to `/home`, which lists that wedding. Opening it shows the dashboard: the couple, the events, and the real counts. An admin can correct the couple’s names and the wedding dates, and can write the one invitation message. Dashboard, Couple, and Invitation share the updated signed-in header and aligned admin captions. Motion for React controls workspace transitions and entrances across the landing page, account forms, wedding list, setup, and congratulations card, with reduced-motion support. The interface uses Outfit, with Fraunces reserved for the landing headline and prominent couple names. The wedding workspace beyond those screens is not built. Password reset mail is not sent yet.
 
 ## Log
+
+### 2026-10-24 � Outfit and Fraunces typography
+
+Outfit is the default interface font, including navigation, forms, functional headings, dates, amounts, toast messages, and compact wedding references. Fraunces is used for the landing hero headline and the prominent couple names on Dashboard, the invitation preview, and the congratulations card. Both variable fonts load once through Next.js. Display sizes and wrapping follow the typography guide, editable fields use 16px on mobile, and numeric columns request tabular figures. Existing imagery, copy, and animation boundaries remain in place.
+
+### 2026-10-24 — Entrances across the existing journey
+
+The landing hero enters as one group, its photograph softly fades, and the lower landing groups reveal once near the viewport. The shared account screen animates the heading and form together and fades its desktop photograph; mobile keeps the existing image-free layout. The wedding list title and rows enter with a capped stagger, setup enters as title, photograph, and complete form, and the congratulations card enters as one panel. Shared Motion primitives preserve semantic list items, readable server HTML, image loading, form input, and reduced-motion preferences. Typing, validation, saves, and row updates do not restart existing entrances.
+
+### 2026-10-24 — Motion for React
+
+The wedding workspace uses the `motion` package with reusable section and panel boundaries. Opening a different section fades the outgoing content and reveals the incoming panels; Dashboard staggers its title, events, summary cards, and detail cards within 500ms. Couple enters as one panel, and Invitation enters editor-first. Entrances replay on section changes, including returning to Dashboard, while saves and typing keep the existing animation boundary. The header and navigation stay steady. Reduced-motion preferences remove translation and stagger, and server-rendered content stays visible before hydration. The dependency and npm lockfile are included.
+
+### 2026-10-24 — Wedding screen polish and motion
+
+Dashboard, Couple, and Invitation follow the updated Stitch references and shared motion specification. The signed-in name appears as plain medium-weight text on the header background, admin captions align in the sidebar, and the active underline moves between sections. The dashboard reveals its content in groups on first opening; section changes fade out and rise in. Mobile navigation has larger touch targets and tighter spacing above the content. Save hover states, field focus, and reduced-motion behavior are consistent across both forms.
 
 ### 2026-10-22 — Couple and invitation
 

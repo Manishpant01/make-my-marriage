@@ -1,5 +1,9 @@
 # Stitch prompt — open the wedding
 
+Follow [typography.md](typography.md) for the approved Outfit + Fraunces font system; it overrides older font-family instructions in this prompt.
+
+For application animations on this wedding, the home wedding list, and future workspace features, follow [animations.md](animations.md). Desktop and mobile use the shared motion rules.
+
 The filled-in dashboard already exists in Stitch. Paste this into that design. Add the three frames below. Do not redraw or replace the filled-in dashboard.
 
 ## Scope

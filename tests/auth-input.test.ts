@@ -167,3 +167,10 @@ test("the invitation form keeps a short message and allows none", () => {
     expect(parsed.message).toBe("That message is too long.");
   }
 });
+
+
+test("invalid wedding body shapes do not expose schema diagnostics", () => {
+  for (const body of [null, [], "text", 42, true]) {
+    expect(parseWeddingPatch(body)).toEqual({ ok: false, message: "Check the form." });
+  }
+});

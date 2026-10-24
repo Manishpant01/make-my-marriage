@@ -1,6 +1,8 @@
-import Link from "next/link";
 import Image from "next/image";
 import type { ReactNode } from "react";
+import { WeddingAnimationScope, WeddingPanel, WeddingSection } from "@/components/wedding-panel";
+import { WeddingMotion } from "@/components/wedding-motion";
+import { WeddingNavigation, type WeddingNavItem } from "@/components/wedding-navigation";
 import { CoupleForm } from "@/components/couple-form";
 import { InvitationPanel } from "@/components/invitation-panel";
 import { formatRupees, formatWeddingDates, nextEvent } from "@/lib/weddings";
@@ -16,12 +18,6 @@ const WEEKDAYS = [
   "Saturday",
 ];
 
-type NavItem = {
-  label: string;
-  note?: string;
-  href?: string;
-};
-
 export function WeddingDashboard({
   dashboard,
   section,
@@ -31,7 +27,7 @@ export function WeddingDashboard({
 }) {
   const home = `/home/${dashboard.id}`;
   const admin = dashboard.role === "admin";
-  const items: NavItem[] = [
+  const items: WeddingNavItem[] = [
     { label: "Dashboard", href: home },
     { label: "Guests" },
     { label: "Events" },
@@ -62,34 +58,17 @@ export function WeddingDashboard({
       : 0;
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] px-5 py-8 lg:py-10 lg:pr-12 lg:pl-10">
-      <nav
-        aria-label="Wedding"
-        className="mb-8 flex flex-wrap gap-x-5 gap-y-3.5 text-[15px] lg:hidden"
-      >
-        {items.map((item) => (
-          <NavLabel
-            key={item.label}
-            item={item}
-            active={isCurrent(item.label, section)}
-          />
-        ))}
-      </nav>
+    <WeddingAnimationScope>
+    <WeddingMotion key={dashboard.id} section={section ?? "dashboard"}>
+    <div className="mx-auto w-full max-w-[1440px] px-5 pt-4 pb-16 lg:px-10 lg:pt-10">
+      <WeddingNavigation items={items} section={section ?? "dashboard"}
+        className="mb-4 flex flex-wrap gap-x-5 gap-y-0 text-[14px] lg:hidden" />
       <div className="lg:flex lg:items-start lg:gap-14">
-        <aside className="hidden w-[200px] shrink-0 flex-col gap-3.5 pt-0.5 text-[15px] lg:flex">
-          {items.map((item) => (
-            <NavLabel
-              key={item.label}
-              item={item}
-              active={isCurrent(item.label, section)}
-            />
-          ))}
-        </aside>
-        <div
-          key={section ?? "wedding"}
-          className="min-w-0 flex-1 motion-safe:animate-[wedding-rise_180ms_ease-out]"
-        >
+        <WeddingNavigation items={items} section={section ?? "dashboard"}
+          className="hidden w-[200px] shrink-0 flex-col gap-1 pt-0.5 text-[15px] lg:flex" />
+        <WeddingSection key={`${dashboard.id}:${section ?? "dashboard"}`}>
           {section === "couple" ? (
+            <WeddingPanel>
             <CoupleForm
               key={`${dashboard.brideName}|${dashboard.groomName}|${dashboard.startDate}|${dashboard.endDate}`}
               weddingId={dashboard.id}
@@ -98,9 +77,9 @@ export function WeddingDashboard({
               startDate={dashboard.startDate}
               endDate={dashboard.endDate}
             />
+            </WeddingPanel>
           ) : section === "invitation" ? (
             <InvitationPanel
-              key={dashboard.invitationMessage}
               weddingId={dashboard.id}
               brideName={dashboard.brideName}
               groomName={dashboard.groomName}
@@ -113,15 +92,15 @@ export function WeddingDashboard({
             />
           ) : (
             <>
-          <div className="mb-6 flex flex-col gap-1 lg:mb-8 lg:flex-row lg:items-baseline lg:justify-between">
-            <h1 className="text-[22px] font-normal tracking-tight lg:text-[30px]">
+          <WeddingPanel className="mb-6 flex flex-col gap-1 lg:mb-8 lg:flex-row lg:items-baseline lg:justify-between">
+            <h1 className="min-w-0 wrap-anywhere font-display text-[30px] font-medium leading-[1.2] tracking-[-0.02em] lg:text-[38px]">
               {dashboard.brideName} and {dashboard.groomName}
             </h1>
-            <p className="text-[14px] text-muted lg:text-[16px]">
+            <p className="shrink-0 text-[14px] tabular-nums text-muted lg:text-[16px]">
               {formatWeddingDates(dashboard.startDate, dashboard.endDate)}
             </p>
-          </div>
-          <section className="overflow-hidden rounded-lg border border-line bg-surface lg:flex">
+          </WeddingPanel>
+          <WeddingPanel delay={0.04} className="overflow-hidden rounded-lg border border-line bg-surface lg:flex">
             <div className="relative h-48 lg:h-auto lg:min-h-[220px] lg:w-[40%] lg:self-stretch">
               <Image
                 src="/dashboard-mehendi.jpg"
@@ -167,32 +146,35 @@ export function WeddingDashboard({
                 Add an event
               </p>
             </div>
-          </section>
-          <section className="mt-4 grid grid-cols-2 gap-3 lg:mt-6 lg:grid-cols-5 lg:gap-4">
-            <Summary label="Guests" value={String(dashboard.guests)} note="Invited" />
+          </WeddingPanel>
+          <section className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:mt-6 xl:grid-cols-5 lg:gap-4">
+            <Summary delay={0.08} label="Guests" value={String(dashboard.guests)} note="Invited" />
             <Summary
+              delay={0.12}
               label="Events"
               value={String(dashboard.events.length)}
               note="On the schedule"
             />
             <Summary
+              delay={0.16}
               label="Tasks"
               value={String(dashboard.openTasks)}
               note="Open"
             />
             <Summary
+              delay={0.20}
               label="Expenses"
               value={formatRupees(dashboard.spent)}
               note="Spent"
             />
-            <Summary label="Family" value={String(dashboard.family)} note="Helping">
+            <Summary delay={0.24} label="Family" value={String(dashboard.family)} note="Helping">
               <p className="mt-2 flex items-center justify-between border-t border-line pt-2 text-[12px] text-muted">
                 <span>Invite family</span>
-                <span>Admins</span>
+                <span className="text-[10px] font-medium tracking-[0.06em] uppercase">Admins</span>
               </p>
             </Summary>
           </section>
-          <section className="mt-4 grid gap-4 lg:mt-6 lg:grid-cols-3 lg:gap-6">
+          <section className="mt-4 grid gap-4 lg:mt-6 xl:grid-cols-3 lg:gap-6">
             <Detail title="Guests">
               <DetailRow label="Yes" value={String(dashboard.yes)} />
               <DetailRow label="No" value={String(dashboard.no)} divided />
@@ -241,74 +223,38 @@ export function WeddingDashboard({
           </section>
             </>
           )}
-        </div>
+        </WeddingSection>
       </div>
     </div>
-  );
-}
-
-function isCurrent(label: string, section: "couple" | "invitation" | null) {
-  if (label === "Dashboard") {
-    return section === null;
-  }
-  return section !== null && label.toLowerCase() === section;
-}
-
-function NavLabel({ item, active }: { item: NavItem; active: boolean }) {
-  const note = item.note ? (
-    <span className="text-[13px] text-muted">{item.note}</span>
-  ) : null;
-  const row = "inline-flex items-baseline gap-3";
-  if (!item.href) {
-    return (
-      <span className={`${row} text-muted`}>
-        <span>{item.label}</span>
-        {note}
-      </span>
-    );
-  }
-  return (
-    <Link
-      href={item.href}
-      aria-current={active ? "page" : undefined}
-      className={`${row} group text-muted transition duration-180 ease-out`}
-    >
-      <span
-        className={`relative inline-block after:absolute after:-bottom-0.5 after:left-0 after:h-px after:bg-bronze after:transition-[width] after:duration-180 after:ease-out ${
-          active
-            ? "text-ink after:w-full"
-            : "after:w-0 motion-safe:group-hover:translate-x-1 group-hover:text-bronze group-hover:after:w-full"
-        }`}
-      >
-        {item.label}
-      </span>
-      {note}
-    </Link>
+    </WeddingMotion>
+    </WeddingAnimationScope>
   );
 }
 
 function Summary({
+  delay,
   label,
   value,
   note,
   children,
 }: {
+  delay: number;
   label: string;
   value: string;
   note: string;
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col justify-between rounded-lg border border-line bg-surface p-3.5 lg:p-5">
+    <WeddingPanel delay={delay} className="@container min-w-0 cursor-default flex flex-col justify-between rounded-lg border border-line bg-surface p-3.5 lg:p-5">
       <div>
         <div className="text-[13px] text-muted lg:text-[14px]">{label}</div>
-        <div className="my-1 text-[26px] font-medium leading-tight text-bronze lg:my-2 lg:text-[30px]">
+        <div style={label === "Expenses" ? { fontSize: `min(25px, ${145 / Math.max(value.length, 1)}cqi)` } : undefined} className={`my-1 whitespace-nowrap font-medium leading-tight tabular-nums text-bronze lg:my-2 ${label === "Expenses" ? "tracking-tight" : "text-[26px] lg:text-[28px]"}`}>
           {value}
         </div>
       </div>
       <div className="text-[12px] text-muted lg:text-[14px]">{note}</div>
       {children}
-    </div>
+    </WeddingPanel>
   );
 }
 
@@ -320,14 +266,14 @@ function Detail({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-line bg-surface p-4 lg:p-6">
+    <WeddingPanel delay={0.28} className="rounded-lg border border-line bg-surface p-4 lg:p-6">
       <h2 className="mb-3 text-[15px] font-medium lg:mb-4 lg:text-[17px]">
         {title}
       </h2>
       <div className="space-y-3 text-[14px] lg:space-y-3.5 lg:text-[15px]">
         {children}
       </div>
-    </section>
+    </WeddingPanel>
   );
 }
 
@@ -350,7 +296,7 @@ function DetailRow({
     >
       <span className="min-w-0">{label}</span>
       <span
-        className={`shrink-0 font-medium ${mutedValue ? "font-normal text-muted" : ""}`}
+        className={`shrink-0 font-medium tabular-nums ${mutedValue ? "font-normal text-muted" : ""}`}
       >
         {value}
       </span>

@@ -1,5 +1,7 @@
 # Stitch prompt — connect the screens
 
+For application transitions and entrances throughout this flow, follow [animations.md](animations.md), including the home wedding list, setup, account screens, landing, and future features. Navigation destinations remain defined below.
+
 Paste this into the Stitch project that already has these screens. It only wires clicks. Do not redraw a screen, and do not add a screen.
 
 ## Prompt

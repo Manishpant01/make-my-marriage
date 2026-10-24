@@ -1,5 +1,9 @@
 # Stitch prompt — log in and sign up
 
+Follow [typography.md](typography.md) for the approved Outfit + Fraunces font system; it overrides older font-family instructions in this prompt.
+
+For application animations, follow [animations.md](animations.md): a coherent form entrance and short delayed photograph fade, preserving autofill, validation, and mobile behavior.
+
 Paste this into Stitch as a new design. Match the landing page that already exists. Do not redesign the landing page.
 
 ## Prompt

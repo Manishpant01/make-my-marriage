@@ -1,7 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --color-ivory: #f6f3ee;
   --color-ink: #1c1917;
   --color-muted: #6b6560;
@@ -14,15 +15,41 @@
   --color-success: #2f6b4f;
 }
 
-@keyframes wedding-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.wedding-nav-link [data-nav-label] {
+  position: relative;
+  transition: color 180ms ease-out, transform 180ms ease-out;
+}
+
+.wedding-nav-link:not([aria-current]) [data-nav-label]::after {
+  content: "";
+  position: absolute;
+  height: 1px;
+  background: var(--color-bronze);
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms ease-out;
+}
+
+.wedding-nav-link:not([aria-current]):hover [data-nav-label] {
+  color: var(--color-bronze);
+  transform: translateX(2px);
+}
+
+.wedding-nav-link:not([aria-current]):hover [data-nav-label]::after {
+  transform: scaleX(1);
+}
+
+.wedding-nav-link:active { color: var(--color-bronze-hover); }
+.wedding-nav-indicator { transition: transform 180ms ease-out, width 180ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wedding-nav-link [data-nav-label],
+  .wedding-nav-link [data-nav-label]::after,
+  .wedding-nav-indicator { transition: none; }
+  .wedding-nav-link:hover [data-nav-label] { transform: none; }
 }
 
 @keyframes toast-in {

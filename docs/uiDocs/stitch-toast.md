@@ -1,5 +1,7 @@
 # Stitch prompt — toast
 
+Follow [typography.md](typography.md) for the approved Outfit + Fraunces font system; it overrides older font-family instructions in this prompt.
+
 Paste this into the existing MakeMyMarriage screens. It only changes the toast. Do not redraw the page under it.
 
 ## Prompt

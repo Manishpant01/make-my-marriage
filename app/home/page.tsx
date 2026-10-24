@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Entrance } from "@/components/entrance";
+import { entranceTiming } from "@/lib/animation";
 import { AccountHeader } from "@/components/account-header";
 import { StartWeddingForm } from "@/components/start-wedding-form";
 import { getOptionalUser } from "@/lib/auth/session";
@@ -26,12 +28,12 @@ export default async function AccountHomePage() {
         </main>
       ) : (
         <main className="mx-auto w-full max-w-[640px] flex-1 px-6 py-12">
-          <h1 className="mb-6 text-[28px] font-medium tracking-[-0.02em]">
+          <Entrance as="h1" className="mb-6 text-[26px] font-medium leading-[1.3] tracking-[-0.02em] lg:text-[28px]">
             Your weddings
-          </h1>
+          </Entrance>
           <ul className="overflow-hidden rounded-lg border border-line">
             {items.map((item, index) => (
-              <li
+              <Entrance as="li" delay={Math.min((index + 1) * entranceTiming.stagger, entranceTiming.maxRowDelay)}
                 key={item.id}
                 className={index < items.length - 1 ? "border-b border-line" : ""}
               >
@@ -46,7 +48,7 @@ export default async function AccountHomePage() {
                     {formatWeddingDates(item.startDate, item.endDate)}
                   </span>
                 </Link>
-              </li>
+              </Entrance>
             ))}
           </ul>
         </main>
