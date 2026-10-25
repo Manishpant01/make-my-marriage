@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { WeddingAnimationScope, WeddingPanel, WeddingSection } from "@/components/wedding-panel";
 import { WeddingMotion } from "@/components/wedding-motion";
@@ -21,9 +22,11 @@ const WEEKDAYS = [
 export function WeddingDashboard({
   dashboard,
   section,
+  familyPanel,
 }: {
   dashboard: WeddingDashboard;
-  section: "couple" | "invitation" | null;
+  section: "couple" | "invitation" | "family" | "invite-family" | null;
+  familyPanel?: ReactNode;
 }) {
   const home = `/home/${dashboard.id}`;
   const admin = dashboard.role === "admin";
@@ -33,21 +36,23 @@ export function WeddingDashboard({
     { label: "Events" },
     { label: "Tasks" },
     { label: "Expenses" },
-    { label: "Family" },
-    { label: "Invite family", note: "Admins" },
+    { label: "Family", href: `${home}?section=family` },
+    { label: "Invite family", href: `${home}?section=invite-family` },
     { label: "Photos" },
     {
       label: "Invitation",
       note: "Admins",
+      restricted: !admin,
       href: admin ? `${home}?section=invitation` : undefined,
     },
     {
       label: "Couple",
       note: "Admins",
+      restricted: !admin,
       href: admin ? `${home}?section=couple` : undefined,
     },
     { label: "Wedding website" },
-    { label: "Live stream", note: "Admins" },
+    { label: "Live stream", note: "Admins", restricted: !admin },
     { label: "Weddings", href: "/home" },
   ];
   const next = nextEvent(dashboard.events, todayInIndia());
@@ -67,7 +72,7 @@ export function WeddingDashboard({
         <WeddingNavigation items={items} section={section ?? "dashboard"}
           className="hidden w-[200px] shrink-0 flex-col gap-1 pt-0.5 text-[15px] lg:flex" />
         <WeddingSection key={`${dashboard.id}:${section ?? "dashboard"}`}>
-          {section === "couple" ? (
+          {section === "family" || section === "invite-family" ? <WeddingPanel>{familyPanel}</WeddingPanel> : section === "couple" ? (
             <WeddingPanel>
             <CoupleForm
               key={`${dashboard.brideName}|${dashboard.groomName}|${dashboard.startDate}|${dashboard.endDate}`}
@@ -169,8 +174,7 @@ export function WeddingDashboard({
             />
             <Summary delay={0.24} label="Family" value={String(dashboard.family)} note="Helping">
               <p className="mt-2 flex items-center justify-between border-t border-line pt-2 text-[12px] text-muted">
-                <span>Invite family</span>
-                <span className="text-[10px] font-medium tracking-[0.06em] uppercase">Admins</span>
+                <Link href={`${home}?section=invite-family`} data-wedding-section="invite-family" className="inline-flex min-h-11 items-center hover:text-bronze">Invite family</Link>
               </p>
             </Summary>
           </section>

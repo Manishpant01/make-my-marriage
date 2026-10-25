@@ -10,7 +10,8 @@ The bride and groom are admins. Family members are helpers. Each person signs up
 - Sign in
 - Home shows the weddings this person belongs to, with dates
 - Admins can do everything in the wedding
-- Admins add and remove helpers
+- Admins and joined helpers invite family helpers
+- Only admins invite the partner as an admin or remove helpers
 - A helper is invited by email, signs up with that email, and joins that wedding
 - Family record for each person: name, email, and relation to the bride or groom (mother, father, brother, sister, or other)
 - One shared wedding workspace

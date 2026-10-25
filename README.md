@@ -13,7 +13,7 @@ One Next.js app, TypeScript, the App Router, and Node.js. Screens and Route Hand
 - MongoDB Atlas through the official driver
 - Email and password sign-in, with the session stored in Atlas
 - Private Amazon S3 for photos, served by CloudFront
-- Amazon SES for email
+- Resend for email
 - YouTube as an embed, WhatsApp as a `wa.me` link
 
 Product decisions are in `docs/`. What is already built is in `docs/project-status.md`.
@@ -27,6 +27,8 @@ npm run dev
 ```
 
 The app opens at [http://localhost:3000](http://localhost:3000). It boots before those environment values are filled in. The home page is the public landing page. Sign-up and sign-in need `MONGODB_URI` and `AUTH_SECRET`. `GET /api/health` returns `{ "ok": true }`.
+
+Family invitation email needs `RESEND_API_KEY`, `RESEND_FROM_ADDRESS`, and `APP_URL` in `.env.local`. Use a from-address on a domain verified in Resend. `APP_URL` is the application's base URL used for invitation links. AWS credentials are for S3 photos, not email. Missing configuration or a rejected send preserves the invitation for retry. Password-reset email is not implemented yet.
 
 | Script | Does |
 |---|---|

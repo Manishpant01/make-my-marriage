@@ -1,3 +1,7 @@
+export class RequestError extends Error {
+  constructor(message: string, public status = 400) { super(message); }
+}
+
 export class ConfigError extends Error {
   constructor(message: string) {
     super(message);
@@ -31,6 +35,7 @@ export function jsonError(error: string, status: number) {
 }
 
 export function authFailure(error: unknown) {
+  if (error instanceof RequestError) return jsonError(error.message, error.status);
   if (error instanceof RateLimitError) {
     return jsonError(error.message, 429);
   }

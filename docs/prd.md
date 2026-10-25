@@ -22,14 +22,15 @@ There are three groups. The workspace is the wedding. The bride’s side and the
 
 **Admins.** The bride and the groom. They can do everything in the wedding, including adding and removing helpers.
 
-**Helpers.** Family members who help organize. An admin invites a helper by email. The helper signs up with that email and joins the wedding. The helper is linked to the wedding, the couple, and the family. The family record is name, email, and relation to the bride or groom: mother, father, brother, sister, or other.
+**Helpers.** Family members who help organize. An admin or a joined helper invites another helper by email. The helper signs up with that email and joins the wedding. The helper is linked to the wedding, the couple, and the family. The family record is name, email, and relation to the bride or groom: mother, father, brother, sister, or other.
 
 **Guests.** People invited to one or more events. They have no account. They open a personal digital invitation from email and RSVP on that card.
 
 | | Admins (bride and groom) | Helpers (family) | Guests |
 |---|---|---|---|
 | Shared wedding workspace | Yes | Yes | Their own invitation, and the public wedding page |
-| Add and remove helpers | Yes | No | No |
+| Invite helpers | Yes | Yes | No |
+| Invite the partner and remove helpers | Yes | No | No |
 | Rename, reorder, add, and remove events | Yes | Yes | No |
 | Add, assign, and accept tasks | Yes | Yes | No |
 | Budget and expenses | Yes, see and handle | Yes, see and handle | No |
@@ -65,7 +66,7 @@ A new wedding starts from a default list of events. Admins and helpers can chang
 2. Home shows the weddings that person belongs to, with the dates of each wedding.
 3. The bride and the groom are both admins of their wedding.
 4. An admin can do everything in the wedding.
-5. An admin can add a helper, and an admin can remove a helper.
+5. An admin or a joined helper can invite another helper. Only admins can invite the partner or remove helpers.
 6. A helper is invited by email, signs up with that email, and joins that wedding.
 
 **Rules that must be true**

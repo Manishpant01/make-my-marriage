@@ -4,6 +4,9 @@ import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { buttonClass, fieldClass } from "@/components/wordmark";
+import { authInvitePath, invitePath } from "@/lib/invite-path";
+
+type InviteContext = { invite?: string; invitedEmail?: string };
 
 function EyeIcon({ off }: { off: boolean }) {
   return (
@@ -27,11 +30,13 @@ function Field({
   label,
   type,
   autoComplete,
+  defaultValue,
 }: {
   id: string;
   label: string;
   type: string;
   autoComplete: string;
+  defaultValue?: string;
 }) {
   const [visible, setVisible] = useState(false);
   const isPassword = type === "password";
@@ -48,6 +53,7 @@ function Field({
           type={isPassword && visible ? "text" : type}
           autoComplete={autoComplete}
           required
+          defaultValue={defaultValue}
           className={isPassword ? `${fieldClass} pr-12` : fieldClass}
         />
         {isPassword ? (
@@ -108,7 +114,7 @@ async function postAuth(path: string, body: Record<string, FormDataEntryValue>) 
   }
 }
 
-export function LoginForm() {
+export function LoginForm({ invite, invitedEmail }: InviteContext = {}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -123,7 +129,7 @@ export function LoginForm() {
         email: form.get("email") ?? "",
         password: form.get("password") ?? "",
       });
-      router.push("/home");
+      router.push(invitePath(invite));
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Something went wrong.");
@@ -134,7 +140,8 @@ export function LoginForm() {
 
   return (
     <form onSubmit={onSubmit}>
-      <Field id="email" label="Email" type="email" autoComplete="email" />
+      {invitedEmail && <p className="mb-5 wrap-anywhere text-[14px] text-muted">Use {invitedEmail} to return to your invitation. You will accept it after logging in.</p>}
+      <Field id="email" label="Email" type="email" autoComplete="email" defaultValue={invitedEmail} />
       <Field
         id="password"
         label="Password"
@@ -143,7 +150,7 @@ export function LoginForm() {
       />
       <p className="mb-6">
         <Link
-          href="/forgot-password"
+          href={authInvitePath("/forgot-password", invite)}
           className="text-[14px] text-muted transition-colors hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bronze"
         >
           Forgot password
@@ -154,7 +161,7 @@ export function LoginForm() {
       <SwitchLine>
         New here?{" "}
         <Link
-          href="/signup"
+          href={authInvitePath("/signup", invite)}
           className="text-ink underline decoration-line underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bronze"
         >
           Create an account
@@ -164,7 +171,7 @@ export function LoginForm() {
   );
 }
 
-export function SignupForm() {
+export function SignupForm({ invite, invitedEmail }: InviteContext = {}) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -180,7 +187,7 @@ export function SignupForm() {
         email: form.get("email") ?? "",
         password: form.get("password") ?? "",
       });
-      router.push("/home");
+      router.push(invitePath(invite));
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Something went wrong.");
@@ -191,8 +198,9 @@ export function SignupForm() {
 
   return (
     <form onSubmit={onSubmit}>
+      {invitedEmail && <p className="mb-5 wrap-anywhere text-[14px] text-muted">Create your account with {invitedEmail}. You will return to your invitation to accept it.</p>}
       <Field id="name" label="Name" type="text" autoComplete="name" />
-      <Field id="email" label="Email" type="email" autoComplete="email" />
+      <Field id="email" label="Email" type="email" autoComplete="email" defaultValue={invitedEmail} />
       <Field
         id="password"
         label="Password"
@@ -204,7 +212,7 @@ export function SignupForm() {
       <SwitchLine>
         Already have an account?{" "}
         <Link
-          href="/login"
+          href={authInvitePath("/login", invite)}
           className="text-ink underline decoration-line underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bronze"
         >
           Log in
@@ -214,7 +222,7 @@ export function SignupForm() {
   );
 }
 
-export function ForgotPasswordForm() {
+export function ForgotPasswordForm({ invite, invitedEmail }: InviteContext = {}) {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -243,13 +251,13 @@ export function ForgotPasswordForm() {
           If an account exists for that email, a reset link is on its way.
         </p>
       ) : (
-        <Field id="email" label="Email" type="email" autoComplete="email" />
+        <Field id="email" label="Email" type="email" autoComplete="email" defaultValue={invitedEmail} />
       )}
       <FormError message={error} />
       {sent ? null : <SubmitButton pending={pending} label="Send reset link" />}
       <SwitchLine>
         <Link
-          href="/login"
+          href={authInvitePath("/login", invite)}
           className="text-ink underline decoration-line underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bronze"
         >
           Log in

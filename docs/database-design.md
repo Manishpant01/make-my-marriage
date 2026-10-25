@@ -4,7 +4,7 @@
 
 This is the database for version one. One MongoDB Atlas cluster in Mumbai (`ap-south-1`) holds one database. Local, preview, and production each have their own copy of that database, with the same collections, so a test guest or a test photo never lands in a real wedding.
 
-Atlas stores the people who can sign in, their sessions, the weddings, and every list that belongs to a wedding. Amazon S3 stores photo bytes. Amazon SES sends the mail.
+Atlas stores the people who can sign in, their sessions, the weddings, and every list that belongs to a wedding. Amazon S3 stores photo bytes. Resend sends the mail.
 
 Route Handlers check each write with Zod before anything is saved. Zod checks the input. It is not a database product, and it does not store these records.
 
@@ -114,7 +114,7 @@ A membership is one person in one wedding: an admin (bride or groom) or a helper
 | email | Required | The invited email, stored in lowercase. The account email must be this address. Unique together with `weddingId`. |
 | inviteToken | Set when they are invited | A long random token, unique in the database, safe to put in a URL. The link is `/join/` plus this token. The creator’s membership has no token. |
 
-An admin invites their partner with the same kind of link. That membership is `admin`, with relation `bride` or `groom`, and `userId` stays empty until the partner logs in. A helper membership uses the helper relations.
+An admin invites their partner with the same kind of link. That membership is `admin`, with relation `bride` or `groom`, and `userId` stays empty until the partner logs in. A helper membership uses the helper relations and may be invited by an admin or a joined helper. Partner/admin memberships can only be invited by an admin. No inviter or role-promotion field is added.
 
 The server loads the membership by `inviteToken`. It then uses that document’s `weddingId`. It does not search by couple name, person name, or wedding date.
 
@@ -225,9 +225,11 @@ A unique index means two documents cannot share that value. Where the table says
 | emailSends | status + kind | No | Pending password-reset rows have no wedding id. |
 | emailSends | resetToken | Yes, where present | The password-reset link finds exactly one row. |
 
+Family invitation implementation: the Node.js Route Handler calls `POST https://api.resend.com/emails` with native server-side fetch, using `RESEND_API_KEY`, `RESEND_FROM_ADDRESS`, and `APP_URL`. AWS credentials are used only for photo storage. The existing membership and emailSends records, Pending/Joined state, retry claims, and sent/failed statuses are unchanged. A successful response must contain an email id; provider errors, timeouts, missing configuration, and quota failures leave a retryable failed row. Family retry processes at most 50 rows sequentially with 600ms between calls in that request; concurrent requests can still encounter provider limits and remain retryable. Future guest bulk sends may use Resend batch sending with the existing application cap of 50 recipients per batch. Password-reset email remains unimplemented. See https://resend.com/docs/api-reference/emails/send-email and https://resend.com/docs/api-reference/rate-limit.
+
 ## Email batch records
 
-SES sends four kinds of mail: the helper invite, the guest invitation, the reminder, and password reset. The collection is `emailSends`. Each document is one recipient. There is no second mail system and no separate batch document. A batch is simply up to 50 of these rows handed to SES together.
+Resend sends four kinds of mail: the helper invite, the guest invitation, the reminder, and password reset. The collection is `emailSends`. Each document is one recipient. There is no second mail system and no separate batch document. A batch is simply up to 50 of these rows handed to Resend together.
 
 | Field | Set | Holds |
 |---|---|---|
@@ -247,14 +249,14 @@ The helper and guest links keep using the token that already lives on the member
 How a send runs:
 
 1. The app writes one `pending` row per recipient. If that recipient already has a `sent` row for this invitation, it does not write another, and the retry will skip them.
-2. It asks SES to send at most 50 rows at a time. Each guest still receives their own token link. A hundred guests is two batches. Five hundred is ten. One helper invite is a batch of one.
+2. It asks Resend to send at most 50 rows at a time. Each guest still receives their own token link. A hundred guests is two batches. Five hundred is ten. One helper invite is a batch of one.
 3. Each row in the batch is marked `sent` or `failed`.
 4. A retry selects `pending` and `failed`, and skips `sent`.
 5. When a guest invitation row becomes `sent`, that guest’s `invitationSentAt` is set. When a reminder row becomes `sent`, `reminderSentAt` is set. The guest row is what the family sees. The email row is what the retry trusts.
 
-A reminder is a new row with kind `reminder`. It does not create a second guest or a second card. If SES fails, the guest document stays, the row stays `failed`, and the send can be tried again.
+A reminder is a new row with kind `reminder`. It does not create a second guest or a second card. If Resend fails, the guest document stays, the row stays `failed`, and the send can be tried again.
 
-The from-address is the verified domain. Production sending waits until that domain is verified and the SES account is out of the sandbox. Those are SES settings, not fields in Atlas.
+The from-address is the verified domain. Production sending waits until that domain is verified and the Resend account has sufficient sending quota. Those are Resend settings, not fields in Atlas.
 
 ## What is not stored in Atlas
 
@@ -278,6 +280,6 @@ Those lists stay in their own collections and are read by `weddingId`. The guest
 
 Many families each plan a wedding in the same database. A list query always carries the wedding id. Home starts from `userId` on memberships, then reads `startDate` and `endDate` on those weddings.
 
-Five hundred guest emails are ten SES calls of 50. The `sent` status on each row is what makes a repeated run skip people who already received that mail.
+Five hundred guest emails are ten Resend calls of 50. The `sent` status on each row is what makes a repeated run skip people who already received that mail.
 
 This shape is the one a single Atlas cluster in `ap-south-1` is here to hold. The indexes above are the lookups those screens use: one account per email, one session id, one public slug, one invite token, one guest token, one email per wedding on memberships and on guests, and `weddingId` on every list that is loaded with the wedding.

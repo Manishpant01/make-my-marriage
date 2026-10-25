@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useLayoutEffect, useRef } from "react";
+import { toast } from "@/components/toast";
 
-export type WeddingNavItem = { label: string; note?: string; href?: string };
+export type WeddingNavItem = { label: string; note?: string; href?: string; restricted?: boolean };
 
 export function WeddingNavigation({ items, section, className }: {
   items: WeddingNavItem[];
@@ -37,11 +38,17 @@ export function WeddingNavigation({ items, section, className }: {
     <nav ref={nav} aria-label="Wedding" className={`relative ${className}`}>
       <span ref={indicator} aria-hidden="true" className="wedding-nav-indicator pointer-events-none absolute top-0 left-0 h-px bg-bronze" />
       {items.map((item) => {
-        const destination = item.label.toLowerCase();
+        const destination = item.label.toLowerCase().replaceAll(" ", "-");
         const active = destination === section;
         return (
           <div key={item.label} className={`flex min-h-11 items-center justify-between gap-4 lg:min-h-8 ${item.label === "Weddings" ? "lg:mt-2" : ""}`}>
-            {item.href ? (
+            {item.restricted ? (
+              <button type="button"
+                onClick={() => toast.error("Only admins can access this section.")}
+                className="wedding-nav-link inline-flex min-h-11 items-center rounded-sm text-left text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bronze lg:min-h-8">
+                <span data-nav-label>{item.label}</span>
+              </button>
+            ) : item.href ? (
               <Link href={item.href} data-wedding-section={destination === "weddings" ? undefined : destination}
                 aria-current={active ? "page" : undefined}
                 className={`wedding-nav-link inline-flex min-h-11 items-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-bronze lg:min-h-8 ${active ? "font-medium text-ink" : "text-muted"}`}>

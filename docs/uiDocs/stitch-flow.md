@@ -1,5 +1,7 @@
 # Stitch prompt — connect the screens
 
+For the new Family / Invite family / Join invitation screens and invitation-aware login/signup return flow, follow [stitch-family-invitations.md](stitch-family-invitations.md). Its links extend this earlier prototype plan once those frames exist.
+
 For application transitions and entrances throughout this flow, follow [animations.md](animations.md), including the home wedding list, setup, account screens, landing, and future features. Navigation destinations remain defined below.
 
 Paste this into the Stitch project that already has these screens. It only wires clicks. Do not redraw a screen, and do not add a screen.

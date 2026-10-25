@@ -26,7 +26,7 @@ WhatsApp share is built in the browser. It is not an API. On the schedule, on on
 | Helper | A membership on this wedding with role `helper`. |
 | Guest token | The token on one guest. The guest has no account and no session. |
 
-An admin can do everything in the wedding. A helper can edit events, tasks, and the budget, add and update guests, send invitations and reminders, and add photos. A helper cannot add or remove helpers, cannot edit the invitation card wording (the couple’s names and the short message), and cannot set a YouTube URL. A guest can open their own card and RSVP. Anyone can read the public page.
+An admin can do everything in the wedding. A helper can edit events, tasks, and the budget, add and update guests, send invitations and reminders, and add photos. A helper can invite helpers but cannot remove them or invite an admin partner, cannot edit the invitation card wording (the couple’s names and the short message), and cannot set a YouTube URL. A guest can open their own card and RSVP. Anyone can read the public page.
 
 Couple names, a person’s name, and wedding dates are display fields. No route finds a wedding by those values.
 
@@ -70,7 +70,7 @@ A wrong email or password is refused. A person who already has an account uses t
 
 **Who.** Public.
 
-**Does.** Starts a password reset. If an account exists for the email, the server writes one `emailSends` row with kind `password_reset`, a new reset token, and status `pending`, then asks SES to send it. The row is marked `sent` or `failed`. The mail’s link carries only that reset token. The row has the user id and no wedding id.
+**Does.** Starts a password reset. If an account exists for the email, the server writes one `emailSends` row with kind `password_reset`, a new reset token, and status `pending`, then asks Resend to send it. The row is marked `sent` or `failed`. The mail’s link carries only that reset token. The row has the user id and no wedding id.
 
 **Request.** `email`.
 
@@ -134,11 +134,13 @@ The response does not include the guest list, photos, events, tasks, or expenses
 
 **Response.** The same wedding shape as the wedding read, including the calculated sums.
 
+Family invitation implementation: the Node.js Route Handler calls `POST https://api.resend.com/emails` with native server-side fetch, using `RESEND_API_KEY`, `RESEND_FROM_ADDRESS`, and `APP_URL`. AWS credentials are used only for photo storage. The existing membership and emailSends records, Pending/Joined state, retry claims, and sent/failed statuses are unchanged. A successful response must contain an email id; provider errors, timeouts, missing configuration, and quota failures leave a retryable failed row. Family retry processes at most 50 rows sequentially with 600ms between calls in that request; concurrent requests can still encounter provider limits and remain retryable. Future guest bulk sends may use Resend batch sending with the existing application cap of 50 recipients per batch. Password-reset email remains unimplemented. See https://resend.com/docs/api-reference/emails/send-email and https://resend.com/docs/api-reference/rate-limit.
+
 ## Family invite
 
-An admin invites a person by email. The server creates a membership and a long random invite token, then sends `/join/<token>` through the email rules below. The join page loads that membership by the token only. After the person signs up or logs in, accept links the membership to that user. The account email must be the invited email. Two weddings with the same names and the same dates stay separate, because each link is its own token.
+An admin or joined helper invites a helper by email. Only an admin can invite the opposite bride/groom partner. The server creates a membership and a long random invite token, then sends `/join/<token>` through the email rules below. The join page loads that membership by the token only. After the person signs up or logs in, accept links the membership to that user. The account email must be the invited email. Two weddings with the same names and the same dates stay separate, because each link is its own token.
 
-The invite call sends the helper or partner email itself: one `emailSends` row, kind `helper_invite`, then one SES send. If SES fails, the membership remains, the row is `failed`, and an admin retries it with the retry route. Inviting the same email again on this wedding is refused.
+The invite call sends the helper or partner email itself: one `emailSends` row, kind `helper_invite`, then one Resend send. If Resend fails, the membership remains, the row is `failed`, and an authorized member retries it with the retry route (helpers may retry helper invitations only). Inviting the same email again on this wedding is refused.
 
 ### GET /api/weddings/<weddingId>/members
 
@@ -148,13 +150,13 @@ The invite call sends the helper or partner email itself: one `emailSends` row, 
 
 **Request.** `page`, `pageSize`.
 
-**Response.** Each item has the membership id, `name`, `email`, `role`, `relation`, and whether they have joined (`userId` is set). The invite token is not included.
+**Response.** Each item has the membership id, `name`, `email`, `role`, `relation`, and whether they have joined (`userId` is set). The invite token is not included. emailStatus is supplied when a send record exists and the caller may retry it: admins see all family email statuses; helpers see helper invitation statuses only.
 
 ### POST /api/weddings/<weddingId>/invites
 
-**Who.** Admin.
+**Who.** Admin or joined helper.
 
-**Does.** Invites the other admin or a helper. The server writes the membership with `userId` empty, stores the invite token, and sends the join link by email.
+**Does.** Admins may invite the opposite partner as admin or a helper. Joined helpers may invite helpers only; a helper request for role admin returns 403 before any writes. The server writes the membership with `userId` empty, stores the invite token, and sends the join link by email.
 
 **Request.** `name`, `email`, `role`, and `relation`. Role `admin` uses relation `bride` or `groom`. Role `helper` uses relation `mother`, `father`, `brother`, `sister`, or `other`. Any other pairing is refused.
 
@@ -366,12 +368,12 @@ Adding a guest does not send mail. Sending is its own press, described in the ne
 
 ## Invitation, reminder, and retry
 
-Nothing here runs on a schedule. An admin or a helper presses send. The handler writes the rows, talks to SES, and answers when that send is finished. There is no cron and no second mail service.
+Nothing here runs on a schedule. An admin or a helper presses send. The handler writes the rows, talks to Resend, and answers when that send is finished. There is no cron and no second mail service.
 
 Email rules for every wedding send:
 
 - One `emailSends` row per recipient. The row holds the recipient, the kind, the status, and the wedding id. A helper invite also stores the membership id. A guest invitation or a reminder also stores the guest id. The link is built from the token that already lives on the membership or the guest. That token is not copied onto the row.
-- The handler asks SES to send at most 50 rows at a time. Each guest still receives their own link. A hundred guests is two batches. Five hundred is ten. The from-address is the verified address.
+- The handler asks Resend to send at most 50 rows at a time. Each guest still receives their own link. A hundred guests is two batches. Five hundred is ten. The from-address is the verified address.
 - Each row in the batch is marked `sent` or `failed`. A failed row keeps a short error. A failed send leaves the guest, or the membership, in place.
 - A retry selects `pending` and `failed`, and skips `sent`.
 - When a guest invitation row becomes `sent`, that guest’s `invitationSentAt` is set. When a reminder row becomes `sent`, `reminderSentAt` is set.
@@ -404,7 +406,7 @@ For a guest invitation, the send writes a row only when that guest does not alre
 
 **Who.** Admin or helper, with a different set of mail.
 
-**Does.** Sends this wedding’s unsent rows again. The server selects `pending` and `failed` and skips `sent`. An admin’s retry includes `helper_invite`, `guest_invitation`, and `reminder`. A helper’s retry includes `guest_invitation` and `reminder` only, and leaves helper-invite rows untouched. Password-reset rows have no wedding id, so this route never selects them. Successful guest rows update `invitationSentAt` or `reminderSentAt` as in the email rules.
+**Does.** Sends this wedding’s unsent rows again. The server selects `pending` and `failed` and skips `sent`. An admin’s retry includes `helper_invite`, `guest_invitation`, and `reminder`. A helper’s retry includes helper-role `helper_invite` rows plus future `guest_invitation` and `reminder` rows; partner/admin membership invitation rows remain untouched. The current implementation handles family invitation rows only. Password-reset rows have no wedding id, so this route never selects them. Successful guest rows update `invitationSentAt` or `reminderSentAt` as in the email rules.
 
 **Request.** None. The wedding id in the path chooses the rows.
 
@@ -517,3 +519,5 @@ A key from another wedding, or an object that is missing or too large or the wro
 **Response.** The event id and `youtubeUrl`.
 
 A helper, a guest, and the public cannot call this route. They can watch a URL that is already set: members on the event list, and everyone else on the public wedding read.
+
+Joined admins and helpers may invite family helpers with relation mother, father, brother, sister, or other. Only admins may invite the opposite bride/groom partner as an admin, and only admins may remove helpers. Pending invitees and people outside this wedding cannot invite. A helper request for role admin is refused with HTTP 403; bride/groom cannot be used with role helper. Duplicate-email, partner-slot, transaction, and rate-limit protections remain. Helpers may view email status and retry unsent helper invitations for this wedding; partner invitation status and retry stay admin-only. The Invite family link is available to both roles, while only admins see Partner in the form.

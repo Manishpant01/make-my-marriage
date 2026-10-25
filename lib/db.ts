@@ -1,7 +1,7 @@
-import { MongoClient, type Db } from "mongodb";
+import { MongoClient, type Db, type ClientSession } from "mongodb";
 import { ConfigError } from "@/lib/errors";
 
-const INDEX_REVISION = 3;
+const INDEX_REVISION = 4;
 
 const globalForMongo = globalThis as unknown as {
   mongoClient?: Promise<MongoClient>;
@@ -40,6 +40,16 @@ export async function getDb(): Promise<Db> {
   return connected.db("makemymarriage");
 }
 
+export async function transaction<T>(work: (db: Db, session: ClientSession) => Promise<T>) {
+  const db = await readyDb();
+  const session = (await client()).startSession();
+  try {
+    return await session.withTransaction(() => work(db, session));
+  } finally {
+    await session.endSession();
+  }
+}
+
 export function readyDb() {
   if (globalForMongo.indexRevision !== INDEX_REVISION) {
     globalForMongo.indexRevision = INDEX_REVISION;
@@ -63,6 +73,16 @@ async function ensureIndexes() {
       .collection("sessions")
       .createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     db.collection("memberships").createIndex({ userId: 1 }),
+    db.collection("memberships").createIndex({ inviteToken: 1 }, {
+      unique: true, partialFilterExpression: { inviteToken: { $type: "string" } },
+    }),
+    db.collection("memberships").createIndex({ weddingId: 1, relation: 1 }, {
+      unique: true, partialFilterExpression: { role: "admin" },
+    }),
+    db.collection("emailSends").createIndex({ membershipId: 1 }, {
+      unique: true, partialFilterExpression: { kind: "helper_invite" },
+    }),
+    db.collection("emailSends").createIndex({ weddingId: 1, kind: 1, status: 1 }),
     db
       .collection("memberships")
       .createIndex({ weddingId: 1, email: 1 }, { unique: true }),

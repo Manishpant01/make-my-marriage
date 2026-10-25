@@ -11,7 +11,7 @@ These choices are locked:
 - Validation: Zod, on every Route Handler, before a write.
 - Photos: Amazon S3. CloudFront serves them to the app and the public page.
 - Host: Vercel.
-- Email delivery: Amazon SES, sent in batches.
+- Email delivery: Resend, sent in batches.
 - Family sign-in: our own email-and-password auth. No third-party auth. A server-side session in Atlas, and a JWT in an httpOnly cookie that points at that session.
 
 A family invite is a unique link, not a match on name and date. The person clicks it and lands on the site. If they have no account, they create one with email and password, then log in. If they already have an account, they log in. After login, that one wedding is linked to them.
@@ -22,9 +22,9 @@ Version one is sized for about 500 people and about 1000 photos on a single wedd
 
 Nothing else in this design is waiting on a decision.
 
-1. An admin invites a family member by email.
+1. An admin or joined helper invites a family helper by email. Only an admin invites the opposite partner.
 2. The server creates a long random invite token on that membership. The token is unique in the database.
-3. SES sends a link that contains only that token.
+3. Resend sends a link that contains only that token.
 4. They click the link and land on the site. The server loads the membership by the token. It does not search by couple name, person name, or wedding date.
 5. If they have no account, they create one with email and password, then log in with it.
 6. If they already have an account, they log in.
@@ -32,7 +32,7 @@ Nothing else in this design is waiting on a decision.
 
 ## 2. What we are building
 
-One repository. One deployable Next.js application, written in TypeScript, using the App Router, running on Node.js. The screens and the backend live in that one app. Pages render the product. Route Handlers and server-side modules are the backend: they check who is calling, validate the input with Zod, read and write Atlas, and talk to S3 and SES.
+One repository. One deployable Next.js application, written in TypeScript, using the App Router, running on Node.js. The screens and the backend live in that one app. Pages render the product. Route Handlers and server-side modules are the backend: they check who is calling, validate the input with Zod, read and write Atlas, and talk to S3 and Resend.
 
 That is the monolith. There is no second service to deploy, and no public API for other apps to call. The Route Handlers exist for this product’s own screens.
 
@@ -51,7 +51,7 @@ flowchart LR
   app[MakeMyMarriage]
   atlas[(MongoDB Atlas)]
   photos[S3 and CloudFront]
-  ses[Amazon SES]
+  resend[Resend]
   yt[YouTube]
   wa[WhatsApp on the organizer phone]
 
@@ -61,9 +61,9 @@ flowchart LR
   visitors --> app
   app --> atlas
   app --> photos
-  app --> ses
-  ses --> guests
-  ses --> helpers
+  app --> resend
+  resend --> guests
+  resend --> helpers
   app --> yt
   visitors --> yt
   guests --> yt
@@ -86,7 +86,7 @@ flowchart TB
   end
 
   subgraph aws [AWS ap-south-1 Mumbai]
-    ses[Amazon SES]
+    resend[Resend]
     cf[CloudFront]
     s3[S3 private bucket]
   end
@@ -100,7 +100,7 @@ flowchart TB
 
   browser --> next
   next --> atlas
-  next --> ses
+  next --> resend
   next -->|short-lived upload permission| browser
   browser -->|photo bytes| s3
   cf --> s3
@@ -119,7 +119,7 @@ flowchart TB
 
 **CloudFront.** Sits in front of the bucket so the public wedding page and the in-app gallery can show photos. The bucket itself does not allow public access. CloudFront is the only reader, using an origin access control.
 
-**Amazon SES.** In `ap-south-1`. It sends mail. The card the guest reads is a Next.js page, not the email body.
+**Resend.** It sends mail through its HTTPS API, using a server-only API key and a verified from-address. The card the guest reads is a Next.js page, not the email body.
 
 **YouTube and WhatsApp.** YouTube is an embed. WhatsApp is a `wa.me` link. Neither is a server we run.
 
@@ -136,18 +136,18 @@ The server is the authority on every flow. Hiding a button is not the permission
 5. The server writes the wedding, an admin membership for the creator, and the seven default events in order. Event date, time, and venue start empty and are filled in as the family plans.
 6. They invite their partner by the same family-invite link. The partner creates an account if they need one, logs in, and joins the same wedding. Both are admins and can do everything in it.
 
-A forgotten-password email, also sent with SES, lets them set a new password. That mail is part of email-and-password sign-in.
+A forgotten-password email, also sent with Resend, lets them set a new password. That mail is part of email-and-password sign-in.
 
 ### Add a helper
 
-1. An admin enters the helper’s name, email, and relation. The relation is mother, father, brother, sister, or other.
+1. An admin or joined helper enters the new helper’s name, email, and relation. The relation is mother, father, brother, sister, or other.
 2. The server writes a helper membership on that wedding. This is the family record: name, email, relation, and the wedding they belong to.
-3. The server creates a long random invite token on that membership and SES emails a link that contains only that token. The same names and the same wedding date never decide which wedding they join.
+3. The server creates a long random invite token on that membership and Resend emails a link that contains only that token. The same names and the same wedding date never decide which wedding they join.
 4. They click the link and land on the site. If they have no account, they create one with email and password, then log in. If they already have an account, they log in.
 5. The account email must be the invited email. After login, the membership is linked to their user. The wedding appears on their home list with its dates.
 6. An admin can remove a helper. That deletes the membership. The person’s login stays, in case they belong to another wedding. Expenses they already paid still show their name.
 
-A helper cannot add or remove helpers, and cannot make someone an admin.
+A joined helper can invite another helper, but cannot remove helpers or make someone an admin. Only admins invite the opposite partner.
 
 ### Edit events
 
@@ -170,11 +170,11 @@ The wedding screen shows the budget total against the sum of the amounts, and th
 1. An admin creates the invitation wording: the couple and a short message. Those two fields live on the wedding. A helper cannot change them.
 2. An admin or a helper adds a guest with a name and an email, and chooses which events that guest is invited to.
 3. The server creates a long random token and stores it on the guest. The token is the guest’s only credential.
-4. SES sends an email whose link points at that guest’s card, a Next.js page. The email leads them there. It is not the card itself.
+4. Resend sends an email whose link points at that guest’s card, a Next.js page. The email leads them there. It is not the card itself.
 5. The page uses one design for the whole wedding. It fills in that guest’s name and only their events, including each event’s date, time, and venue. Because the card is rendered, a later change to a venue shows up on the card. The wording of the couple and the message stays as the admin wrote it.
 6. A reminder is a second email with the same link. It does not create a second card.
 
-If SES fails, the guest stays saved and the send can be tried again.
+If Resend fails, the guest stays saved and the send can be tried again.
 
 ### RSVP
 
@@ -283,7 +283,8 @@ The client may send a wedding id. The server uses it only after it finds a membe
 | | Admins (bride and groom) | Helpers (family) | Guests |
 |---|---|---|---|
 | Shared wedding workspace | Yes | Yes | Their own card, and the public page |
-| Add and remove helpers, and add the other admin | Yes | No | No |
+| Invite helpers | Yes | Yes | No |
+| Remove helpers and invite the other admin | Yes | No | No |
 | Create and edit the invitation card (couple and message) | Yes | No | No |
 | Rename, reorder, add, and remove events | Yes | Yes | No |
 | Add, assign, and accept tasks | Yes | Yes | No |
@@ -295,15 +296,15 @@ The client may send a wedding id. The server uses it only after it finds a membe
 | WhatsApp share of the schedule, an event, or a task | Yes | Yes | No |
 | Watch YouTube in the app | Yes | Yes | On the public page |
 
-Helpers cannot add or remove helpers, cannot edit the invitation card wording, and cannot attach YouTube. Guests cannot see the budget, the guest list, or the tasks.
+Helpers can invite other helpers, but cannot remove helpers, invite an admin partner, edit the invitation card wording, or attach YouTube. Guests cannot see the budget, the guest list, or the tasks.
 
 ## 8. Images, email, video, and WhatsApp
 
 **Images.** S3 stores photo bytes only. The bucket is private and blocks public access. An admin or helper asks the app for a presigned upload URL. That URL expires in a few minutes, allows one object key under that wedding, and accepts only jpeg, png, or webp, up to 10 MB. The browser uploads straight to S3. The app then checks the object and saves `s3Key` and `uploadedBy` in Atlas. CloudFront serves the gallery to the signed-in app and to the public page. There is one gallery per wedding. A wedding may hold about 1000 photos, so the gallery is paged. The page does not load every photo at once.
 
-**Email.** SES sends the helper invite, the guest invitation, the reminder, and password reset. The guest mail contains the link to `/invite/<token>`. The family mail contains the link to `/join/<token>`. The card is the page, not the email body.
+**Email.** Resend sends the helper invite, the guest invitation, the reminder, and password reset. The guest mail contains the link to `/invite/<token>`. The family mail contains the link to `/join/<token>`. The card is the page, not the email body.
 
-Sending to many people is a batch, not one request per person and not a second service. The app writes one pending row per recipient. It then asks SES for a bulk send of up to 50 at a time, and each recipient still gets their own token link. It marks each row sent or failed. Rows already sent are skipped if the batch is run again. A hundred guests is two batches. Five hundred is ten. The from-address is a verified domain. Production sending waits until that domain is verified and the SES account is out of the sandbox.
+Sending to many people is a batch, not one request per person and not a second service. The app writes one pending row per recipient. It then asks Resend for a bulk send of up to 50 at a time, and each recipient still gets their own token link. It marks each row sent or failed. Rows already sent are skipped if the batch is run again. A hundred guests is two batches. Five hundred is ten. The from-address is a verified domain. Production sending waits until that domain is verified and the Resend account has sufficient sending quota.
 
 **Video.** `youtubeUrl` on the event is the whole integration. The page turns a normal YouTube link into the official embed and shows it in the app and on the public page. Empty URL means no player. YouTube hosts the live stream and the recording.
 
@@ -311,9 +312,11 @@ Sending to many people is a batch, not one request per person and not a second s
 
 **Public site and invitation.** The public page is `/w/<slug>`. The invitation is `/invite/<token>`. One card template serves every guest. The slug is unique and meant to be shared. The token is a secret. It is not written into WhatsApp text, gallery URLs, or the public page.
 
+Family invitation implementation: the Node.js Route Handler calls `POST https://api.resend.com/emails` with native server-side fetch, using `RESEND_API_KEY`, `RESEND_FROM_ADDRESS`, and `APP_URL`. AWS credentials are used only for photo storage. The existing membership and emailSends records, Pending/Joined state, retry claims, and sent/failed statuses are unchanged. A successful response must contain an email id; provider errors, timeouts, missing configuration, and quota failures leave a retryable failed row. Family retry processes at most 50 rows sequentially with 600ms between calls in that request; concurrent requests can still encounter provider limits and remain retryable. Future guest bulk sends may use Resend batch sending with the existing application cap of 50 recipients per batch. Password-reset email remains unimplemented. See https://resend.com/docs/api-reference/emails/send-email and https://resend.com/docs/api-reference/rate-limit.
+
 ## 9. Environments and configuration
 
-Three environments: local, preview, and production. Each has its own Atlas database and its own S3 bucket, so a test guest or a test photo never lands in a real wedding. Production Atlas, S3, CloudFront, and SES are in `ap-south-1`. Preview and local use the same region.
+Three environments: local, preview, and production. Each has its own Atlas database and its own S3 bucket, so a test guest or a test photo never lands in a real wedding. Production Atlas, S3, and CloudFront use `ap-south-1`. Preview and local use the same AWS region. Resend email is configured separately through its HTTPS API.
 
 Production deploys from the main branch of the one repository to one Vercel project. Preview deployments are the other branches.
 
@@ -329,9 +332,10 @@ Names only. Values live in Vercel’s environment settings and in a local env fi
 | `AWS_SECRET_ACCESS_KEY` | Secret for that key |
 | `S3_BUCKET` | Private photo bucket for this environment |
 | `CLOUDFRONT_DOMAIN` | Host that serves gallery images |
-| `SES_FROM_ADDRESS` | Verified from-address for invite, reminder, helper, and password mail |
+| `RESEND_API_KEY` | Server-only Resend API key with sending access |
+| `RESEND_FROM_ADDRESS` | Verified from-address for invite, reminder, helper, and password mail |
 
-The AWS key can upload and read objects in the one bucket and send email from the one verified address. It has no other access in the account. The session cookie is httpOnly and sent only over HTTPS.
+The AWS key can upload and read objects in the one bucket. Email uses a separate Resend sending API key. It has no other access in the account. The session cookie is httpOnly and sent only over HTTPS.
 
 ## 10. What version one does not need
 
@@ -343,3 +347,5 @@ The AWS key can upload and read objects in the one bucket and send email from th
 - **Guest accounts.** The token in the invitation link is the only guest credential.
 
 The same boundary keeps these out of the design: a payment system for the price of the app, guest travel and stay, a second workspace for each side of the family, a planner desk for a professional with many clients, any wedding tradition other than North Indian Hindu, and a choice of invitation themes. The price of MakeMyMarriage is still an open question. It is not a field on the wedding and not a line in the expenses.
+
+Joined admins and helpers may invite family helpers with relation mother, father, brother, sister, or other. Only admins may invite the opposite bride/groom partner as an admin, and only admins may remove helpers. Pending invitees and people outside this wedding cannot invite. A helper request for role admin is refused with HTTP 403; bride/groom cannot be used with role helper. Duplicate-email, partner-slot, transaction, and rate-limit protections remain. Helpers may view email status and retry unsent helper invitations for this wedding; partner invitation status and retry stay admin-only. The Invite family link is available to both roles, while only admins see Partner in the form.

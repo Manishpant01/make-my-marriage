@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useTransition, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, useTransition, type MouseEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useAnimate } from "motion/react";
 import { useWorkspaceReducedMotion } from "@/components/use-workspace-reduced-motion";
+import { WeddingLoadingContext } from "@/components/wedding-loading-context";
 
 type Destination = { section: string; href: string };
 
@@ -12,6 +13,7 @@ export function WeddingMotion({ section, children }: { section: string; children
   const [scope, animate] = useAnimate<HTMLDivElement>();
   const reduced = useWorkspaceReducedMotion();
   const [pending, startTransition] = useTransition();
+  const [loadingSection, setLoadingSection] = useState(section);
   const exit = useRef<ReturnType<typeof animate> | null>(null);
   const outgoing = useRef<HTMLElement | null>(null);
   const requested = useRef<Destination | null>(null);
@@ -61,6 +63,7 @@ export function WeddingMotion({ section, children }: { section: string; children
     requested.current = destination;
     restore();
     if (destination.section === section) {
+      setLoadingSection(section);
       requested.current = null;
       if (hadRequest) startTransition(() => router.push(link.href, { scroll: false }));
       return;
@@ -68,6 +71,7 @@ export function WeddingMotion({ section, children }: { section: string; children
     const panel = scope.current?.querySelector<HTMLElement>("[data-wedding-panel]");
     const commit = () => {
       if (request.current !== token) return;
+      setLoadingSection(destination.section);
       startTransition(() => router.push(destination.href, { scroll: false }));
       recovery.current = setTimeout(() => {
         if (request.current === token) {
@@ -88,8 +92,9 @@ export function WeddingMotion({ section, children }: { section: string; children
 
   return (
     <div ref={scope} onClickCapture={navigate}>
-      {pending ? <p role="status" className="fixed right-5 bottom-5 z-40 rounded-lg border border-line bg-surface px-4 py-3 text-sm text-muted">Loading wedding...</p> : null}
-      {children}
+      <WeddingLoadingContext.Provider value={pending && loadingSection !== section ? loadingSection : null}>
+        {children}
+      </WeddingLoadingContext.Provider>
     </div>
   );
 }

@@ -29,7 +29,7 @@ The family needs one shared place for that wedding.
 - **Users.** Bride, groom, and multiple family members.
 - **One workspace.** The wedding. No separate bride-side and groom-side workspaces.
 - **Admins.** The bride and the groom. They can do everything, and they add and manage helpers.
-- **Helpers.** Family organizers. They sign up with their own email and are linked to the wedding, the couple, and the family. They can add tasks, assign tasks, and accept tasks. They can rename, reorder, add, and remove events. They can see and handle the budget and expenses. They can add guests and send the digital invitation. Guests cannot edit events.
+- **Helpers.** Family organizers. They sign up with their own email and are linked to the wedding, the couple, and the family. They can add tasks, assign tasks, and accept tasks. They can rename, reorder, add, and remove events. They can see and handle the budget and expenses. They can add guests and send the digital invitation. Joined helpers can also invite other family helpers; partner invitations and helper removal are admin-only. Guests cannot edit events.
 - **Wedding type in version one.** North Indian Hindu only.
 - **Events.** A default set the family can edit. Guests are invited per event. RSVP is per event.
 - **Guests.** A digital invitation for each guest, sent by email, with per-event RSVP. The guest opens it with no account.
@@ -80,7 +80,7 @@ Each event has its own guest list and its own RSVP.
 ## Roles
 
 - **Admins (bride and groom).** They can do everything in the wedding, including adding helpers, events, guests, expenses, the website, photos, and YouTube.
-- **Helpers (family organizers).** They sign up with their own email. They can add tasks, assign tasks, and accept tasks. They can rename, reorder, add, and remove events. They can see and handle the budget and expenses. They can add guests and send the digital invitation. They can add photos they have, and they can share organizing details to WhatsApp. Guests cannot edit events.
+- **Helpers (family organizers).** They sign up with their own email. They can add tasks, assign tasks, and accept tasks. They can rename, reorder, add, and remove events. They can see and handle the budget and expenses. They can add guests and send the digital invitation. Joined helpers can also invite other family helpers; partner invitations and helper removal are admin-only. They can add photos they have, and they can share organizing details to WhatsApp. Guests cannot edit events.
 - **Guests.** They open their digital invitation from the email and RSVP. They do not get an account.
 
 ## Open points

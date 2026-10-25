@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, test, vi } from "vitest";
 import { WeddingDashboard } from "@/components/wedding-dashboard";
 import type { WeddingDashboard as DashboardData } from "@/lib/weddings";
+import { InviteFamilyForm } from "@/components/invite-family-form";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }),
@@ -40,3 +41,21 @@ test.each([null, "couple", "invitation"] as const)(
     }
   },
 );
+
+test("helper navigation opens Invite family while keeping other admin sections restricted", () => {
+  const html = renderToStaticMarkup(createElement(WeddingDashboard, { dashboard: { ...dashboard, role: "helper" }, section: null }));
+  expect(html).toContain('href="/home/000000000000000000000001?section=invite-family"');
+  expect(html).not.toContain('href="/home/000000000000000000000001?section=couple"');
+  expect(html).not.toContain('href="/home/000000000000000000000001?section=invitation"');
+});
+
+test.each([true, false])("partner invitation controls require admin permission (%s)", canInvitePartner => {
+  const html = renderToStaticMarkup(createElement(InviteFamilyForm, {
+    weddingId: dashboard.id, canInvitePartner, ownEmail: "person@example.com",
+    partnerRelation: canInvitePartner ? "groom" : null, partnerName: canInvitePartner ? "Rohan" : "", existingPartner: null,
+  }));
+  expect(html).toContain('name="relation"');
+  expect(html).toContain('name="email"');
+  if (canInvitePartner) expect(html).toContain("Partner <span");
+  else { expect(html).not.toContain("Partner <span"); expect(html).toContain("Only admins can invite a partner."); }
+});

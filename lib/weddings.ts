@@ -370,7 +370,7 @@ export async function getWeddingDashboard(userId: ObjectId, weddingId: string) {
     budget: wedding.budgetTotal ?? 0,
     spent: expenseSums[0]?.spent ?? 0,
     stillDue: expenseSums[0]?.stillDue ?? 0,
-    family: members.length,
+    family: members.filter(member => member.userId).length,
   };
 }
 

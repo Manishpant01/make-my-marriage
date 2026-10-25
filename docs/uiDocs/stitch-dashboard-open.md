@@ -1,5 +1,7 @@
 # Stitch prompt — open the wedding
 
+The approved Family, Invite family, and Join invitation flow is now in [stitch-family-invitations.md](stitch-family-invitations.md). It supersedes this document's older invite form sketch and join-page exclusion for that design task.
+
 Follow [typography.md](typography.md) for the approved Outfit + Fraunces font system; it overrides older font-family instructions in this prompt.
 
 For application animations on this wedding, the home wedding list, and future workspace features, follow [animations.md](animations.md). Desktop and mobile use the shared motion rules.

@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@layer base {
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
 @theme inline {
   --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
