@@ -294,7 +294,7 @@ export async function getWeddingForUser(userId: ObjectId, weddingId: string) {
   };
 }
 
-export async function getWeddingDashboard(userId: ObjectId, weddingId: string) {
+export async function getWeddingDashboard(userId: ObjectId, weddingId: string, options: { skipEvents?: boolean } = {}) {
   const access = await memberWedding(userId, weddingId);
   if (!access) {
     return null;
@@ -302,7 +302,7 @@ export async function getWeddingDashboard(userId: ObjectId, weddingId: string) {
   const { db, id, wedding, membership } = access;
   const [events, guests, openTaskCount, openTasks, expenseSums, members] =
     await Promise.all([
-      db
+      options.skipEvents ? Promise.resolve([] as EventDoc[]) : db
         .collection<EventDoc>("events")
         .find({ weddingId: id })
         .sort({ order: 1 })

@@ -140,6 +140,8 @@ Date and time stay empty until the family knows them. They are the local calenda
 
 Removing an event deletes that document and drops its id from every guest’s invited events and from their replies.
 
+Event implementation metadata: weddings.eventRevision serializes schedule writes inside transactions. Event documents may carry a private createKey and createFingerprint to replay duplicate adds safely; the wedding/createKey index is unique where a key is present. These fields are not included in event read responses. Clearing optional event details unsets the stored fields; response values are empty strings for missing text and null for missing coordinates.
+
 ## Tasks
 
 Tasks belong to the one wedding. Guests have none.

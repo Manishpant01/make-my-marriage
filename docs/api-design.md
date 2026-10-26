@@ -248,6 +248,16 @@ This route does not accept `youtubeUrl`.
 
 The call does not delete guests, helpers, tasks, expenses, or photos.
 
+### Event implementation details
+
+Joined admins and helpers use the same event permissions. GET /api/weddings/<weddingId>/events/<eventId> loads one event for direct editor entry, with the same membership check as the list; missing, deleted, and foreign-wedding ids return 404.
+
+Optional clearing is explicit: omit a field in PATCH to preserve it; send null or an empty string for date/time to clear that field. Supply venueName, latitude, and longitude together to set a venue, or send all three as null (venueName may also be empty) to clear it. Partial venue groups are rejected without saving. Coordinates must be numeric, latitude -90..90 and longitude -180..180. Event names are trimmed, required, and at most 120 characters; venue names are at most 200 characters. Dates are real YYYY-MM-DD calendar dates and times are HH:mm in IST. Event dates may be outside the wedding span; event saves never update the wedding dates. Unknown fields, including youtubeUrl, are rejected.
+
+POST accepts an optional UUID Idempotency-Key header, which the editor supplies. Repeated saves with that key return the same event; using it with different creation details returns 409. These keys are scoped to the wedding and stored on the event. Event mutations share a limit of 60 attempts per signed-in person and wedding per 15 minutes. The list defaults to 20 items and caps pageSize at 50. Reordering uses the global order across pages.
+
+Create, move, and delete run in MongoDB transactions and write the wedding's eventRevision first to serialize concurrent schedule changes. Delete also removes this event from invitedEventIds and RSVP rows in the same wedding, without deleting guests. A cleanup failure rolls the entire deletion back. Saved events feed Dashboard and the existing invitation preview. There is no bulk order endpoint, map provider, WhatsApp sharing, YouTube editing, or event restore in this slice.
+
 ## Tasks
 
 Tasks belong to the one wedding. Status is `open` or `accepted`. A new task is `open`. The assignee is an admin or a helper who has already joined this wedding.

@@ -23,17 +23,21 @@ export function WeddingDashboard({
   dashboard,
   section,
   familyPanel,
+  eventsPanel,
+  eventView,
 }: {
   dashboard: WeddingDashboard;
-  section: "couple" | "invitation" | "family" | "invite-family" | null;
+  section: "couple" | "invitation" | "family" | "invite-family" | "events" | null;
   familyPanel?: ReactNode;
+  eventsPanel?: ReactNode;
+  eventView?: string;
 }) {
   const home = `/home/${dashboard.id}`;
   const admin = dashboard.role === "admin";
   const items: WeddingNavItem[] = [
     { label: "Dashboard", href: home },
     { label: "Guests" },
-    { label: "Events" },
+    { label: "Events", href: `${home}?section=events` },
     { label: "Tasks" },
     { label: "Expenses" },
     { label: "Family", href: `${home}?section=family` },
@@ -56,6 +60,7 @@ export function WeddingDashboard({
     { label: "Weddings", href: "/home" },
   ];
   const next = nextEvent(dashboard.events, todayInIndia());
+  const motionSection = section === "events" && eventView ? `event-editor:${eventView}` : section ?? "dashboard";
   const later = dashboard.events.filter((event) => event.id !== next?.id);
   const spentShare =
     dashboard.budget > 0
@@ -64,15 +69,15 @@ export function WeddingDashboard({
 
   return (
     <WeddingAnimationScope>
-    <WeddingMotion key={dashboard.id} section={section ?? "dashboard"}>
+    <WeddingMotion key={dashboard.id} section={motionSection}>
     <div className="mx-auto w-full max-w-[1440px] px-5 pt-4 pb-16 lg:px-10 lg:pt-10">
       <WeddingNavigation items={items} section={section ?? "dashboard"}
         className="mb-4 flex flex-wrap gap-x-5 gap-y-0 text-[14px] lg:hidden" />
       <div className="lg:flex lg:items-start lg:gap-14">
         <WeddingNavigation items={items} section={section ?? "dashboard"}
           className="hidden w-[200px] shrink-0 flex-col gap-1 pt-0.5 text-[15px] lg:flex" />
-        <WeddingSection key={`${dashboard.id}:${section ?? "dashboard"}`}>
-          {section === "family" || section === "invite-family" ? <WeddingPanel>{familyPanel}</WeddingPanel> : section === "couple" ? (
+        <WeddingSection key={`${dashboard.id}:${motionSection}`}>
+          {section === "events" ? <WeddingPanel>{eventsPanel}</WeddingPanel> : section === "family" || section === "invite-family" ? <WeddingPanel>{familyPanel}</WeddingPanel> : section === "couple" ? (
             <WeddingPanel>
             <CoupleForm
               key={`${dashboard.brideName}|${dashboard.groomName}|${dashboard.startDate}|${dashboard.endDate}`}
@@ -148,7 +153,7 @@ export function WeddingDashboard({
                 </div>
               ) : null}
               <p className="mt-4 border-t border-line pt-3 text-[14px] text-muted">
-                Add an event
+                <Link href={`${home}?section=events&event=new`} data-wedding-section="event-editor:new" className="inline-flex min-h-11 items-center hover:text-bronze focus-visible:outline-2 focus-visible:outline-bronze">Add an event</Link>
               </p>
             </div>
           </WeddingPanel>

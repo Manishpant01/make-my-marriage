@@ -1,7 +1,7 @@
 import { MongoClient, type Db, type ClientSession } from "mongodb";
 import { ConfigError } from "@/lib/errors";
 
-const INDEX_REVISION = 4;
+const INDEX_REVISION = 5;
 
 const globalForMongo = globalThis as unknown as {
   mongoClient?: Promise<MongoClient>;
@@ -88,6 +88,7 @@ async function ensureIndexes() {
       .createIndex({ weddingId: 1, email: 1 }, { unique: true }),
     db.collection("weddings").createIndex({ publicSlug: 1 }, { unique: true }),
     db.collection("events").createIndex({ weddingId: 1, order: 1 }),
+    db.collection("events").createIndex({ weddingId: 1, createKey: 1 }, { unique: true, partialFilterExpression: { createKey: { $type: "string" } } }),
     db.collection("weddingCreates").createIndex(
       { userId: 1, key: 1 },
       { unique: true },

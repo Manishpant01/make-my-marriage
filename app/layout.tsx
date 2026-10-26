@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit, Fraunces } from "next/font/google";
 import { AnimationScope } from "@/components/entrance";
 import { ToastProvider } from "@/components/toast";
+import { NavigationHistory } from "@/components/navigation-history";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${fraunces.variable} bg-ivory font-sans font-normal text-ink antialiased`}
       >
+        <NavigationHistory />
         <AnimationScope><ToastProvider>{children}</ToastProvider></AnimationScope>
       </body>
     </html>

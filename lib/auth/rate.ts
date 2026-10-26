@@ -26,7 +26,7 @@ export function clientAddress(request: Request) {
   return "local";
 }
 
-export async function assertAuthRate(key: string) {
+export async function assertAuthRate(key: string, maxAttempts = MAX_ATTEMPTS) {
   const db = await readyDb();
   const attempts = db.collection<AttemptDoc>("authAttempts");
   // A single document update reserves each attempt, including the first one.
@@ -36,7 +36,7 @@ export async function assertAuthRate(key: string) {
     $set: {
       count: {
         $cond: [expired, 1, {
-          $min: [{ $add: [{ $ifNull: ["$count", 0] }, 1] }, MAX_ATTEMPTS + 1],
+          $min: [{ $add: [{ $ifNull: ["$count", 0] }, 1] }, maxAttempts + 1],
         }],
       },
       resetAt: { $cond: [expired, { $add: ["$$NOW", WINDOW_MS] }, "$resetAt"] },
@@ -48,7 +48,7 @@ export async function assertAuthRate(key: string) {
         upsert: true,
         returnDocument: "after",
       });
-      if (!reserved || reserved.count > MAX_ATTEMPTS) {
+      if (!reserved || reserved.count > maxAttempts) {
         throw new RateLimitError();
       }
       return;

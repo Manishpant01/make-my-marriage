@@ -28,15 +28,16 @@ function Fields({ count = 4 }: { count?: number }) {
 }
 
 export function WeddingSectionSkeleton({ section = "dashboard" }: { section?: string }) {
-  const label = section === "invite-family" ? "family invitation" : section;
+  const editor = section.startsWith("event-editor:");
+  const label = editor ? "event editor" : section === "invite-family" ? "family invitation" : section;
   return <LoadingRegion label={`Loading ${label}…`} className="min-h-[460px]">
     <div className="mb-7 space-y-3"><Skeleton className="h-9 w-56 max-w-full" /><Skeleton className="h-4 w-72 max-w-full" /></div>
-    {section === "couple" || section === "invite-family" ? <div className="space-y-8">
+    {editor || section === "couple" || section === "invite-family" ? <div className="space-y-8">
       {section === "invite-family" && <Skeleton className="h-12 w-64 max-w-full" />}
-      <Fields count={section === "couple" ? 4 : 3} />
+      <Fields count={editor ? 6 : section === "couple" ? 4 : 3} />
       <Skeleton className="h-12 w-40 rounded-lg" />
     </div> : section === "invitation" ? <div className="grid gap-7 xl:grid-cols-2"><div className="space-y-5"><Skeleton className="h-4 w-32" /><Skeleton className="h-44 w-full rounded-lg" /><Skeleton className="h-12 w-40 rounded-lg" /></div><div className="space-y-8 rounded-lg border border-line bg-surface p-7"><Skeleton className="mx-auto h-9 w-4/5" /><Lines /><Lines /></div></div>
-      : section === "family" ? <div className="overflow-hidden rounded-lg border border-line bg-surface">{Array.from({ length: 4 }, (_, index) => <div key={index} className="flex flex-wrap items-center justify-between gap-5 border-b border-line p-5 last:border-0"><div className="w-44 max-w-full space-y-2"><Skeleton className="h-5 w-full" /><Skeleton className="h-3.5 w-4/5" /></div><Skeleton className="h-4 w-16" /><Skeleton className="h-4 w-16" /></div>)}</div>
+      : section === "family" || section === "events" ? <div className="overflow-hidden rounded-lg border border-line bg-surface">{Array.from({ length: section === "events" ? 7 : 4 }, (_, index) => <div key={index} className="flex flex-wrap items-center justify-between gap-5 border-b border-line p-5 last:border-0"><div className="w-44 max-w-full space-y-2"><Skeleton className="h-5 w-full" /><Skeleton className="h-3.5 w-4/5" /></div><Skeleton className="h-4 w-16" /><Skeleton className="h-4 w-16" /></div>)}</div>
         : <>
           <div className="overflow-hidden rounded-lg border border-line bg-surface lg:flex"><Skeleton className="h-48 rounded-none lg:h-auto lg:min-h-80 lg:w-2/5" /><div className="flex-1 space-y-7 p-5 lg:p-8"><Skeleton className="h-7 w-48 max-w-full" /><Lines /><Lines /></div></div>
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">{Array.from({ length: 5 }, (_, index) => <div key={index} className="space-y-4 rounded-lg border border-line bg-surface p-4"><Skeleton className="h-3 w-16" /><Skeleton className="h-8 w-16" /><Skeleton className="h-3 w-20 max-w-full" /></div>)}</div>
