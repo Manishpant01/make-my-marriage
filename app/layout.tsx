@@ -18,6 +18,9 @@ const fraunces = Fraunces({
 
 export const metadata: Metadata = {
   title: "MakeMyMarriage",
+  icons: {
+    icon: { url: "/logo.png", type: "image/png" },
+  },
 };
 
 export default function RootLayout({
